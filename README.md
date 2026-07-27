@@ -1,6 +1,6 @@
 # MOSAIC
 
-<img src="Mosaic.png" alt="MOSAIC logo" width="200">
+<img src="Mosaic.png" alt="MOSAIC logo" width="300">
 
 _"We do what we must, because we can." — GLaDOS_
 
@@ -49,6 +49,7 @@ hand, since they can affect cluster quorum.
 
 - make application of ansible passwordless
 - graphana dashboard
+- fix statelocking in b2
 - minecraft lxc
 - arr stack
 
