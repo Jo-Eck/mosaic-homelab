@@ -8,7 +8,7 @@ resource "proxmox_virtual_environment_vm" "talos" {
   description = "MOSAIC Talos ${each.value.role}"
   node_name   = each.value.pve_node
   vm_id       = each.value.vmid
-  tags        = sort(["mosaic", "talos", each.value.role])
+  tags        = sort(["talos", each.value.role])
 
   # qemu-guest-agent is provided by the factory schematic extension
   agent {
