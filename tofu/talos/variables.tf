@@ -1,7 +1,7 @@
 variable "talos_version" {
   description = "Talos version (keep in sync with tofu/proxmox and .mise.toml)"
   type        = string
-  default     = "v1.10.4"
+  default     = "v1.13.7"
 }
 
 variable "kubernetes_version" {

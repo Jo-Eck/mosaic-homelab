@@ -6,7 +6,7 @@ proxmox_insecure = true
 
 # From https://factory.talos.dev (include the qemu-guest-agent extension)
 talos_schematic_id = "REPLACE-WITH-FACTORY-SCHEMATIC-ID"
-talos_version      = "v1.10.4"
+talos_version      = "v1.13.7"
 
 # LAN details — must match how the PVE hosts are wired
 network_bridge  = "LocalLan"

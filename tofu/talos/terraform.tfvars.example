@@ -2,7 +2,7 @@
 # sync with tofu/proxmox + .mise.toml.
 #   cp terraform.tfvars.example terraform.tfvars
 
-talos_version      = "v1.10.4"
+talos_version      = "v1.13.7"
 kubernetes_version = "v1.32.3"
 
 network_cidr    = "24"

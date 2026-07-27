@@ -1,6 +1,7 @@
 variable "proxmox_endpoint" {
   description = "Proxmox API endpoint, e.g. https://topton.<tailnet>.ts.net:8006"
   type        = string
+  default     = "https://topton.<tailnet>.ts.net:8006"
 }
 
 variable "proxmox_insecure" {
@@ -18,7 +19,7 @@ variable "cluster_name" {
 variable "talos_version" {
   description = "Talos version; keep in sync with tofu/talos and .mise.toml"
   type        = string
-  default     = "v1.10.4" # verify latest stable
+  default     = "v1.13.7" # keep in sync with tofu/talos + .mise.toml talosctl
 }
 
 variable "talos_schematic_id" {
@@ -28,6 +29,7 @@ variable "talos_schematic_id" {
     report their IP to Proxmox.
   EOT
   type        = string
+  default     = "ce4c980550dd2ab1b17bbf2b08801c7eb59418eafe8f279833297925d67c7515"
 }
 
 # --- Networking -----------------------------------------------------------
