@@ -45,10 +45,12 @@ scoped API token, Flux decrypts with its own age key inside the cluster, and the
 runner holds the state and secret keys. Host changes still go through Ansible by
 hand, since they can affect cluster quorum.
 
-## Roadmap
+## TODO
 
-Not built yet: MetalLB for LAN service IPs, bulk storage, a media and *arr
-stack, metrics and logs, and a Minecraft LXC.
+- make application of ansible passwordless
+- graphana dashboard
+- minecraft lxc
+- arr stack
 
 ## Getting started
 
