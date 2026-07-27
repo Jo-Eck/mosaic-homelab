@@ -5,10 +5,10 @@ data "terraform_remote_state" "proxmox" {
   config = {
     bucket = "mosaic-tofu-state"
     key    = "proxmox/terraform.tfstate"
-    region = "us-west-004"
+    region = "eu-central-003"
 
     endpoints = {
-      s3 = "https://s3.us-west-004.backblazeb2.com"
+      s3 = "https://s3.eu-central-003.backblazeb2.com"
     }
 
     skip_credentials_validation = true
@@ -20,10 +20,11 @@ data "terraform_remote_state" "proxmox" {
 }
 
 locals {
-  nodes         = data.terraform_remote_state.proxmox.outputs.talos_nodes
-  cluster_name  = data.terraform_remote_state.proxmox.outputs.cluster_name
-  controlplanes = { for k, v in local.nodes : k => v if v.role == "controlplane" }
-  workers       = { for k, v in local.nodes : k => v if v.role == "worker" }
+  nodes              = data.terraform_remote_state.proxmox.outputs.talos_nodes
+  cluster_name       = data.terraform_remote_state.proxmox.outputs.cluster_name
+  talos_schematic_id = data.terraform_remote_state.proxmox.outputs.talos_schematic_id
+  controlplanes      = { for k, v in local.nodes : k => v if v.role == "controlplane" }
+  workers            = { for k, v in local.nodes : k => v if v.role == "worker" }
 
   # Single control-plane: its IP is the cluster endpoint.
   cp_ip            = one([for k, v in local.nodes : v.ip if v.role == "controlplane"])
@@ -44,7 +45,8 @@ locals {
             }]
           }
           install = {
-            disk = var.install_disk
+            disk  = var.install_disk
+            image = "factory.talos.dev/installer/${local.talos_schematic_id}:${var.talos_version}"
           }
         },
         n.role == "controlplane" ? { certSANs = [n.ip] } : {}

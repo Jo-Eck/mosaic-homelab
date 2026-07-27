@@ -8,6 +8,10 @@ output "cluster_name" {
   value = var.cluster_name
 }
 
+output "talos_schematic_id" {
+  value = var.talos_schematic_id
+}
+
 output "controlplane_ips" {
   value = [for k, v in var.talos_nodes : v.ip if v.role == "controlplane"]
 }
