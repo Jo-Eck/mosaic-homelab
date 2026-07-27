@@ -1,0 +1,10 @@
+timezone: Etc/UTC
+
+# Swap the Proxmox enterprise repo for the no-subscription repo on hosts
+pve_no_subscription_repo: true
+
+# Authorized SSH keys for the `jon` login are pulled from this GitHub user's
+# public keys (https://github.com/<user>.keys). Add break-glass keys that aren't
+# on GitHub to ssh_authorized_keys.
+github_ssh_key_user: Jo-Eck
+ssh_authorized_keys: []

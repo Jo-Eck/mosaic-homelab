@@ -1,0 +1,47 @@
+---
+- name: Fetch authorized keys from GitHub ({{ github_ssh_key_user }})
+  ansible.builtin.uri:
+    url: "https://github.com/{{ github_ssh_key_user }}.keys"
+    return_content: true
+  register: _github_keys
+  delegate_to: localhost
+  run_once: true
+  when: github_ssh_key_user | length > 0
+
+- name: Assemble the authorized key list (GitHub keys + any extras)
+  ansible.builtin.set_fact:
+    _ssh_authorized_keys: >-
+      {{ (ssh_authorized_keys + ((_github_keys.content | default('')).splitlines() | select('match', '\S') | list)) | unique }}
+
+- name: Refuse to enforce key-only auth with no keys resolved (anti-lockout)
+  ansible.builtin.assert:
+    that:
+      - _ssh_authorized_keys | length > 0
+    fail_msg: >-
+      No SSH keys resolved from GitHub ({{ github_ssh_key_user | default('unset') }})
+      or ssh_authorized_keys. Refusing to disable password auth — you would be
+      locked out.
+    success_msg: "{{ _ssh_authorized_keys | length }} key(s) resolved; safe to enforce key-only auth."
+  when: ssh_disable_password_auth | bool
+
+- name: Authorize SSH public keys for {{ ansible_user }}
+  ansible.posix.authorized_key:
+    user: "{{ ansible_user }}"
+    key: "{{ item }}"
+    state: present
+  loop: "{{ _ssh_authorized_keys }}"
+
+- name: Harden sshd (no root login, key-only auth)
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/10-mosaic.conf
+    mode: "0644"
+    content: |
+      # Managed by MOSAIC — ansible/roles/ssh_hardening. Do not edit by hand.
+      PermitRootLogin {{ ssh_permit_root_login }}
+      PubkeyAuthentication yes
+      {% if ssh_disable_password_auth | bool %}
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      {% endif %}
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Reload sshd

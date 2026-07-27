@@ -1,0 +1,21 @@
+# Pinned toolchain for MOSAIC — https://mise.jdx.dev
+# Run `mise install` on your workstation AND on the Pi runner so every apply
+# uses the same tool versions. Bump these deliberately (Renovate can PR them).
+#
+# NOTE: version numbers below are illustrative starting points — check the
+# upstream release pages and keep talos + kubernetes mutually compatible.
+[tools]
+opentofu   = "1.10.3"
+talosctl   = "1.10.4"
+kubectl    = "1.32.3"
+helm       = "3.16.4"
+flux2      = "2.4.0"
+sops       = "3.9.4"
+age        = "1.2.1"
+jq         = "1.7.1"
+yq         = "4.44.6"
+
+[env]
+# Keep tool state inside the repo checkout on the runner (optional)
+# KUBECONFIG = "{{config_root}}/kubeconfig"
+# TALOSCONFIG = "{{config_root}}/talosconfig"

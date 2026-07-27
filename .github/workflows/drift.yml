@@ -1,0 +1,28 @@
+name: drift
+
+# Nightly drift detection: if the live infra no longer matches git, the plan
+# returns exit code 2 and this job fails, surfacing manual/UI changes.
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: [self-hosted, linux, ARM64, mosaic]
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [proxmox, talos]
+    defaults:
+      run:
+        working-directory: tofu/${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: tofu init -input=false
+      - name: Detect drift
+        run: tofu plan -input=false -detailed-exitcode

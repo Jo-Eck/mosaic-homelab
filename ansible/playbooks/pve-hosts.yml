@@ -1,0 +1,13 @@
+---
+# Configure the Proxmox VE hosts (Topton + Legion).
+#
+# SAFETY: This playbook deliberately does NOT manage corosync, cluster
+# membership, or the QDevice/qnetd. A 2-node + QDevice quorum is fragile; those
+# changes stay manual and out of the GitOps path on purpose.
+- name: Configure Proxmox VE hosts
+  hosts: pve
+  become: true # sudo password supplied at runtime via `-K` (from your password manager)
+  roles:
+    - role: pve_common
+    - role: ssh_hardening
+    # Add a storage role here when you introduce bulk/media storage (host ZFS).

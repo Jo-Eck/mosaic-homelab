@@ -1,0 +1,7 @@
+---
+# Reload (not restart) so a bad config can't drop your live session — sshd keeps
+# the running config if the reload fails validation.
+- name: Reload sshd
+  ansible.builtin.service:
+    name: ssh
+    state: reloaded

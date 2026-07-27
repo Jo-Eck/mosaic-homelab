@@ -1,0 +1,58 @@
+# ---------------------------------------------------------------------------
+# OpenTofu / Terraform
+# ---------------------------------------------------------------------------
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+*.tfplan.*
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Real variable files — only *.example is committed
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# ---------------------------------------------------------------------------
+# Decrypted secrets & generated credentials — NEVER commit plaintext
+# (encrypted *.sops.yaml files ARE committed; their decrypted forms are not)
+# ---------------------------------------------------------------------------
+*.decrypted
+*.dec.yaml
+*.dec.yml
+*.plain.yaml
+kubeconfig
+*.kubeconfig
+talosconfig
+*.talosconfig
+*.agekey
+age*.key
+keys.txt
+
+# ---------------------------------------------------------------------------
+# SSH / private keys
+# ---------------------------------------------------------------------------
+id_*
+!id_*.pub
+
+# ---------------------------------------------------------------------------
+# Ansible
+# ---------------------------------------------------------------------------
+*.retry
+.ansible/
+ansible/collections/
+ansible/roles/**/files/*.tar.gz
+
+# ---------------------------------------------------------------------------
+# Editor / OS
+# ---------------------------------------------------------------------------
+**/.vscode
+**/.idea
+.DS_Store

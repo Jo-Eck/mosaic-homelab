@@ -1,0 +1,46 @@
+name: apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tofu/**"
+      - "talos/**"
+
+# Never run two applies at once (protects state + the cluster).
+concurrency:
+  group: mosaic-apply
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  proxmox:
+    runs-on: [self-hosted, linux, ARM64, mosaic]
+    # Gate applies behind a GitHub Environment reviewer until you trust the flow.
+    environment: production
+    defaults:
+      run:
+        working-directory: tofu/proxmox
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: tofu init -input=false
+      - run: tofu apply -input=false -auto-approve
+
+  talos:
+    needs: proxmox
+    runs-on: [self-hosted, linux, ARM64, mosaic]
+    environment: production
+    defaults:
+      run:
+        working-directory: tofu/talos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: tofu init -input=false
+      - run: tofu apply -input=false -auto-approve
+
+  # The Kubernetes/app layer is reconciled by Flux from kubernetes/clusters/mosaic
+  # — there is no apply step here. Merging changes under kubernetes/** is enough.

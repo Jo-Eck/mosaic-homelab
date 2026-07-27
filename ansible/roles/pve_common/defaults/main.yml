@@ -1,0 +1,7 @@
+pve_base_packages:
+  - vim
+  - htop
+  - curl
+  - tmux
+  - git
+  - ifupdown2

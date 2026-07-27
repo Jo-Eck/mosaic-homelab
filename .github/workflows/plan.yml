@@ -1,0 +1,48 @@
+name: plan
+
+on:
+  pull_request:
+    paths:
+      - "tofu/**"
+      - "talos/**"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# The self-hosted runner on the Pi provides these via its systemd EnvironmentFile
+# (kept on the Pi, NOT in GitHub secrets):
+#   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY  -> Backblaze B2 (state)
+#   SOPS_AGE_KEY_FILE                          -> infra age key (decrypt)
+jobs:
+  tofu:
+    runs-on: [self-hosted, linux, ARM64, mosaic]
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [proxmox, talos]
+    defaults:
+      run:
+        working-directory: tofu/${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pinned tools
+        uses: jdx/mise-action@v2
+
+      - name: Format check
+        run: tofu fmt -check -recursive
+
+      - name: Init
+        run: tofu init -input=false
+
+      - name: Validate
+        run: tofu validate
+
+      - name: Plan
+        run: |
+          echo '### tofu plan — ${{ matrix.module }}' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          tofu plan -input=false -no-color | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

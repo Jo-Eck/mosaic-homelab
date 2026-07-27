@@ -1,0 +1,12 @@
+---
+# Configure the Raspberry Pi: it provides corosync quorum (QDevice) AND hosts
+# the self-hosted GitHub Actions runner that applies this repo.
+#
+# SAFETY: the QDevice/qnetd service is assumed already set up and is NOT touched
+# here. This playbook only manages the runner + base tooling.
+- name: Configure the Raspberry Pi (GitOps runner)
+  hosts: management
+  become: true
+  roles:
+    - role: runner
+    - role: ssh_hardening

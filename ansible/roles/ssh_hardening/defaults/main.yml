@@ -1,0 +1,13 @@
+# SSH daemon hardening. Authorized keys are pulled from a GitHub user's public
+# keys (github_ssh_key_user) and merged with any extras in ssh_authorized_keys.
+# Password auth is only disabled once at least one key resolves, so an empty
+# list can't lock you out.
+ssh_permit_root_login: "no"
+ssh_disable_password_auth: true
+
+# GitHub user whose public keys (https://github.com/<user>.keys) are authorized.
+# Set in group_vars/all.yml. An empty string disables the GitHub pull.
+github_ssh_key_user: ""
+
+# Optional extra keys (e.g. a break-glass key that isn't on GitHub).
+ssh_authorized_keys: []

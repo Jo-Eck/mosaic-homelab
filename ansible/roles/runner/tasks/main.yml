@@ -1,0 +1,50 @@
+---
+# Install the self-hosted GitHub Actions runner on the Pi (ARM64). Registration
+# needs a short-lived token — do that once (see docs/bootstrap.md); this role
+# handles the durable install + tooling.
+
+- name: Ensure runner user exists
+  ansible.builtin.user:
+    name: "{{ runner_user }}"
+    shell: /bin/bash
+    create_home: true
+
+- name: Install prerequisites
+  ansible.builtin.apt:
+    name:
+      - curl
+      - jq
+      - git
+      - ca-certificates
+    state: present
+    update_cache: true
+
+- name: Create runner directory
+  ansible.builtin.file:
+    path: "{{ runner_dir }}"
+    state: directory
+    owner: "{{ runner_user }}"
+    group: "{{ runner_user }}"
+    mode: "0755"
+
+- name: Download the GitHub Actions runner (arm64)
+  ansible.builtin.get_url:
+    url: "https://github.com/actions/runner/releases/download/v{{ runner_version }}/actions-runner-linux-arm64-{{ runner_version }}.tar.gz"
+    dest: "{{ runner_dir }}/actions-runner.tar.gz"
+    owner: "{{ runner_user }}"
+    mode: "0644"
+
+- name: Unpack the runner
+  ansible.builtin.unarchive:
+    src: "{{ runner_dir }}/actions-runner.tar.gz"
+    dest: "{{ runner_dir }}"
+    remote_src: true
+    creates: "{{ runner_dir }}/config.sh"
+    owner: "{{ runner_user }}"
+
+# Registration + service install (run once, then it self-updates):
+#   sudo -u {{ runner_user }} {{ runner_dir }}/config.sh \
+#     --url https://github.com/Jo-Eck/MOSAIC \
+#     --token <RUNNER_REGISTRATION_TOKEN> \
+#     --labels self-hosted,linux,ARM64,mosaic --unattended
+#   cd {{ runner_dir }} && sudo ./svc.sh install {{ runner_user }} && sudo ./svc.sh start

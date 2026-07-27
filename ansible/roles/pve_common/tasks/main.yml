@@ -1,0 +1,31 @@
+---
+- name: Remove enterprise APT repositories (no subscription)
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/apt/sources.list.d/pve-enterprise.list
+    - /etc/apt/sources.list.d/ceph.list
+  when: pve_no_subscription_repo | default(true)
+
+- name: Add the pve-no-subscription repository
+  ansible.builtin.apt_repository:
+    repo: "deb http://download.proxmox.com/debian/pve {{ ansible_distribution_release }} pve-no-subscription"
+    filename: pve-no-subscription
+    state: present
+  when: pve_no_subscription_repo | default(true)
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name: "{{ pve_base_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ timezone | default('Etc/UTC') }}"
+
+# NOTE: intentionally no network-bridge management here. Editing bridges/VLANs
+# on a live remote node can lock you out — do those changes manually with a
+# console/rollback (`ifreload -a`) until you trust the automation.

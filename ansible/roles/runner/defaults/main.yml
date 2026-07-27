@@ -1,0 +1,4 @@
+runner_user: actions
+runner_dir: /opt/actions-runner
+# Pin to a current release: https://github.com/actions/runner/releases
+runner_version: "2.321.0"

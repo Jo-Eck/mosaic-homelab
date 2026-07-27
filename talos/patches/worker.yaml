@@ -1,0 +1,5 @@
+# Worker specific settings. Add node labels, extra disk mounts for storage,
+# etc. here as the cluster grows (e.g. Longhorn/democratic-csi disks).
+machine:
+  nodeLabels:
+    node.mosaic/role: worker

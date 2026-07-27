@@ -1,0 +1,27 @@
+# SOPS creation rules: which age key encrypts which paths.
+#
+# Two trust domains (see docs/bootstrap.md):
+#   - infra   : lives on the Pi runner; Tofu & Ansible decrypt with it
+#   - cluster : lives as a Secret in flux-system; Flux decrypts in-cluster
+#
+# Generate the keys during bootstrap, then replace the placeholders below with
+# the PUBLIC keys (the `age1...` recipients):
+#   age-keygen -o infra.agekey      # -> public key replaces <INFRA_AGE_PUBKEY>
+#   age-keygen -o cluster.agekey    # -> public key replaces <CLUSTER_AGE_PUBKEY>
+#
+# Encrypt a file:   sops --encrypt --in-place path/to/secret.sops.yaml
+# Edit a file:      sops path/to/secret.sops.yaml
+
+creation_rules:
+  # ---- Infra secrets (Pi runner: Tofu + Ansible + Talos PKI) --------------
+  - path_regex: (tofu|ansible|talos)/.*\.sops\.(ya?ml|json|env)$
+    key_groups:
+      - age:
+          - "<INFRA_AGE_PUBKEY>"
+
+  # ---- Cluster secrets (decrypted in-cluster by Flux) ---------------------
+  - path_regex: kubernetes/.*\.sops\.(ya?ml|json|env)$
+    encrypted_regex: "^(data|stringData)$"
+    key_groups:
+      - age:
+          - "<CLUSTER_AGE_PUBKEY>"

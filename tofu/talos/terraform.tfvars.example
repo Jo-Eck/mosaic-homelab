@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars and adjust. Keep versions mutually compatible and in
+# sync with tofu/proxmox + .mise.toml.
+#   cp terraform.tfvars.example terraform.tfvars
+
+talos_version      = "v1.10.4"
+kubernetes_version = "v1.32.3"
+
+network_cidr    = "24"
+network_gateway = "192.168.8.1"
+nameservers     = ["192.168.8.1"]
+install_disk    = "/dev/sda"

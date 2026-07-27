@@ -1,0 +1,29 @@
+# Copy to terraform.tfvars and adjust for your environment.
+#   cp terraform.tfvars.example terraform.tfvars
+
+proxmox_endpoint = "https://topton.<tailnet>.ts.net:8006"
+proxmox_insecure = true
+
+# From https://factory.talos.dev (include the qemu-guest-agent extension)
+talos_schematic_id = "REPLACE-WITH-FACTORY-SCHEMATIC-ID"
+talos_version      = "v1.10.4"
+
+# LAN details — must match how the PVE hosts are wired
+network_bridge  = "vmbr0"
+network_gateway = "192.168.8.1"
+network_cidr    = "24"
+nameservers     = ["192.168.8.1"]
+
+# PVE datastores
+image_datastore = "local"
+vm_datastore    = "local-lvm"
+
+# Override the default node map only if the defaults don't fit your LAN.
+# Defaults: cp-1 .40, w-1 .41, w-2 .42, w-3 .43 (below the .100 DHCP pool; the
+# Pi holds .51), with pinned MACs BC:24:11:00:00:4x for router DHCP reservations.
+# talos_nodes = {
+#   "talos-cp-1" = { role = "controlplane", pve_node = "topton", vmid = 8000, cores = 4, memory = 8192,  disk_size = 40, ip = "192.168.8.40", mac = "BC:24:11:00:00:40" }
+#   "talos-w-1"  = { role = "worker",       pve_node = "topton", vmid = 8001, cores = 4, memory = 12288, disk_size = 80, ip = "192.168.8.41", mac = "BC:24:11:00:00:41" }
+#   "talos-w-2"  = { role = "worker",       pve_node = "legion", vmid = 8002, cores = 4, memory = 12288, disk_size = 80, ip = "192.168.8.42", mac = "BC:24:11:00:00:42" }
+#   "talos-w-3"  = { role = "worker",       pve_node = "legion", vmid = 8003, cores = 4, memory = 12288, disk_size = 80, ip = "192.168.8.43", mac = "BC:24:11:00:00:43" }
+# }

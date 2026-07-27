@@ -1,0 +1,13 @@
+# Control-plane specific settings.
+#
+# We run 1 control-plane + 3 workers, so the control-plane stays dedicated
+# (no user workloads). If you ever want it schedulable, add:
+#   cluster:
+#     allowSchedulingOnControlPlanes: true
+cluster:
+  controllerManager:
+    extraArgs:
+      bind-address: 0.0.0.0
+  scheduler:
+    extraArgs:
+      bind-address: 0.0.0.0

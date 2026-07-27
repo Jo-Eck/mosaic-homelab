@@ -1,0 +1,5 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Platform add-ons go here (e.g. MetalLB for LAN LoadBalancer IPs, cert-manager,
+# a CSI driver, kube-prometheus-stack). Empty until you add the first one.
+resources: []
