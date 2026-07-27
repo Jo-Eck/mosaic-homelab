@@ -9,7 +9,7 @@ talos_schematic_id = "REPLACE-WITH-FACTORY-SCHEMATIC-ID"
 talos_version      = "v1.10.4"
 
 # LAN details — must match how the PVE hosts are wired
-network_bridge  = "vmbr0"
+network_bridge  = "LocalLan"
 network_gateway = "192.168.8.1"
 network_cidr    = "24"
 nameservers     = ["192.168.8.1"]

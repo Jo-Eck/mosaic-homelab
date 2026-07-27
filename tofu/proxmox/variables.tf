@@ -33,7 +33,7 @@ variable "talos_schematic_id" {
 # --- Networking -----------------------------------------------------------
 variable "network_bridge" {
   type    = string
-  default = "vmbr0"
+  default = "LocalLan"
 }
 
 variable "network_gateway" {
