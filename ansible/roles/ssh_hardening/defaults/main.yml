@@ -2,6 +2,11 @@
 # keys (github_ssh_key_user) and merged with any extras in ssh_authorized_keys.
 # Password auth is only disabled once at least one key resolves, so an empty
 # list can't lock you out.
+#
+# NOTE: "no" blocks ALL root SSH, including key-based. Proxmox cluster nodes
+# need key-based root SSH for noVNC console proxying + live migration, so the
+# `pve` group overrides this to "prohibit-password" in group_vars/pve.yml.
+# Do not set PVE hosts back to "no".
 ssh_permit_root_login: "no"
 ssh_disable_password_auth: true
 

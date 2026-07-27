@@ -1,0 +1,14 @@
+# Group override for the Proxmox VE hosts (topton, legion).
+#
+# Proxmox needs passwordless *key-based* root SSH between cluster nodes for
+# noVNC console proxying to remote-node VMs and for live migration. The role
+# default `PermitRootLogin no` (roles/ssh_hardening/defaults/main.yml) blocks
+# ALL root logins, including key-based — so opening the console of a VM on a
+# node you are NOT currently connected to fails with
+# "permission denied (publickey)", and cross-node migration breaks too.
+#
+# `prohibit-password` keeps root *password* login disabled (still hardened)
+# while allowing the key-based root channel the cluster relies on. Do NOT set
+# this back to "no" on PVE nodes. The Pi runner (management group) keeps the
+# role default "no" — it is not a cluster node and needs no root SSH.
+ssh_permit_root_login: "prohibit-password"
