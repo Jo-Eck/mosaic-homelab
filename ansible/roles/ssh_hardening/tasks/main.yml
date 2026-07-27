@@ -5,6 +5,7 @@
     return_content: true
   register: _github_keys
   delegate_to: localhost
+  become: false           # public HTTP GET on the control node — never sudo here
   run_once: true
   when: github_ssh_key_user | length > 0
 
