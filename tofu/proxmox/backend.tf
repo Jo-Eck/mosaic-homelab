@@ -22,7 +22,10 @@ terraform {
     skip_metadata_api_check     = true
     skip_s3_checksum            = true
 
-    # Native lockfile locking (OpenTofu >= 1.10) — no DynamoDB required
-    use_lockfile = true
+    # No state locking: Backblaze B2 returns 501 NotImplemented for the
+    # conditional PutObject (If-None-Match) that OpenTofu's `use_lockfile`
+    # requires, and B2 has no DynamoDB. Acceptable here — a single self-hosted
+    # runner plus serial manual applies means no concurrent writers.
+    # Do NOT re-add use_lockfile while state lives on B2.
   }
 }

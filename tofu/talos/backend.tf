@@ -15,6 +15,7 @@ terraform {
     skip_metadata_api_check     = true
     skip_s3_checksum            = true
 
-    use_lockfile = true
+    # No state locking — B2 doesn't support the conditional PutObject that
+    # `use_lockfile` needs (501 NotImplemented). See proxmox/backend.tf.
   }
 }
