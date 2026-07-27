@@ -72,9 +72,12 @@ age-keygen -o cluster.agekey    # for Flux (lives in-cluster)
 ## 4. The Pi runner
 
 ```bash
-# From your workstation:
-ansible-galaxy collection install -r ansible/requirements.yml
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/pi-runner.yml -K
+# From your workstation. Run Ansible from the ansible/ dir so its ansible.cfg
+# (inventory, roles, and collections paths) is loaded:
+cd ansible
+ansible-galaxy collection install -r requirements.yml
+ansible-playbook -i inventory/hosts.yml playbooks/pi-runner.yml -K
+cd ..
 ```
 
 Then register + start the runner and give it its secrets. On the Pi:
@@ -120,8 +123,10 @@ cp terraform.tfvars.example terraform.tfvars      # set versions, gateway, insta
 ## 6. First apply (manual)
 
 ```bash
-# Host config
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/pve-hosts.yml -K
+# Host config (run Ansible from the ansible/ dir so ansible.cfg is loaded)
+cd ansible
+ansible-playbook -i inventory/hosts.yml playbooks/pve-hosts.yml -K
+cd ..
 
 # VMs + Talos image
 cd tofu/proxmox && tofu init && tofu apply
