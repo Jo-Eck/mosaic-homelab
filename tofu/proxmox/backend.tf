@@ -9,10 +9,10 @@ terraform {
   backend "s3" {
     bucket = "mosaic-tofu-state"
     key    = "proxmox/terraform.tfstate"
-    region = "us-west-004"
+    region = "eu-central-003"
 
     endpoints = {
-      s3 = "https://s3.us-west-004.backblazeb2.com"
+      s3 = "https://s3.eu-central-003.backblazeb2.com"
     }
 
     # B2 is not AWS — skip AWS-specific behaviour
