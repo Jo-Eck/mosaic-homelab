@@ -7,7 +7,7 @@ ssh_disable_password_auth: true
 
 # GitHub user whose public keys (https://github.com/<user>.keys) are authorized.
 # Set in group_vars/all.yml. An empty string disables the GitHub pull.
-github_ssh_key_user: ""
+github_ssh_key_user: "Jo-Eck"
 
 # Optional extra keys (e.g. a break-glass key that isn't on GitHub).
 ssh_authorized_keys: []
