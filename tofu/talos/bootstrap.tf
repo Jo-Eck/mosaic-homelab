@@ -46,7 +46,7 @@ data "talos_cluster_health" "this" {
   control_plane_nodes  = [for k, v in local.controlplanes : v.ip]
   worker_nodes         = [for k, v in local.workers : v.ip]
 
-  timeouts {
+  timeouts = {
     read = "10m"
   }
 }
