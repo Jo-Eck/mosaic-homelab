@@ -36,7 +36,6 @@ locals {
       machine = merge(
         {
           network = {
-            hostname    = name
             nameservers = var.nameservers
             interfaces = [{
               deviceSelector = { physical = true }
@@ -51,6 +50,21 @@ locals {
         },
         n.role == "controlplane" ? { certSANs = [n.ip] } : {}
       )
+    })
+  }
+
+  # Talos >= 1.12 configures the hostname via a dedicated HostnameConfig
+  # document (default `auto: stable`). Setting the legacy
+  # machine.network.hostname as well fails validation ("static hostname is
+  # already set in v1alpha1 config"), so the static hostname is set here
+  # instead. `auto: "off"` is required alongside a static hostname (they are
+  # mutually exclusive unless auto is off).
+  hostname_patches = {
+    for name in keys(local.nodes) : name => yamlencode({
+      apiVersion = "v1alpha1"
+      kind       = "HostnameConfig"
+      auto       = "off"
+      hostname   = name
     })
   }
 }

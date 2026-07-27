@@ -14,6 +14,7 @@ data "talos_machine_configuration" "this" {
     file("${path.module}/../../talos/patches/all.yaml"),
     file("${path.module}/../../talos/patches/${each.value.role}.yaml"),
     local.node_patches[each.key],
+    local.hostname_patches[each.key],
   ]
 }
 
