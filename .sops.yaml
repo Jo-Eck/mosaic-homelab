@@ -17,11 +17,11 @@ creation_rules:
   - path_regex: (tofu|ansible|talos)/.*\.sops\.(ya?ml|json|env)$
     key_groups:
       - age:
-          - "<INFRA_AGE_PUBKEY>"
+          - "age12yejewjve2zf00f0qfv7x8uc8av8rgqju2qk9vaye9uagmaj99yq589uzp"
 
   # ---- Cluster secrets (decrypted in-cluster by Flux) ---------------------
   - path_regex: kubernetes/.*\.sops\.(ya?ml|json|env)$
     encrypted_regex: "^(data|stringData)$"
     key_groups:
       - age:
-          - "<CLUSTER_AGE_PUBKEY>"
+          - "age1w2989nss64j6250cdsp90fm79jzfvuj6qepzz30l9yq0cq60deys2ujvpu"
