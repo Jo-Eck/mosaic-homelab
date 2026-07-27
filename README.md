@@ -29,12 +29,11 @@ over Tailscale. The automation runs on the Pi, which is always on the tailnet.
 ## Layout
 
 ```
-ansible/     Proxmox host and Pi config
-tofu/        proxmox (VMs) and talos (cluster) modules
-talos/       machine-config patches
-kubernetes/  Flux entrypoints, infrastructure, apps
-.github/     plan / apply / drift workflows (Pi runner)
-docs/        bootstrap runbook
+hosts/           Proxmox host and Pi config
+infrastructure/  proxmox (VMs) and talos (cluster + machine-config patches)
+gitops/          Flux entrypoints, infrastructure, apps
+.github/         plan / apply / drift workflows (Pi runner)
+docs/            bootstrap runbook
 ```
 
 ## Access

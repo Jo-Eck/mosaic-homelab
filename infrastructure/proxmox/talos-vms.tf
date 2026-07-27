@@ -1,6 +1,6 @@
-# Talos VMs: boot the ISO (maintenance mode), then the tofu/talos module applies
+# Talos VMs: boot the ISO (maintenance mode), then the infrastructure/talos module applies
 # machine config which installs Talos to scsi0. Static IPs come from the
-# generated per-node patches in tofu/talos (single source of truth), not cloud-init.
+# generated per-node patches in infrastructure/talos (single source of truth), not cloud-init.
 resource "proxmox_virtual_environment_vm" "talos" {
   for_each = var.talos_nodes
 

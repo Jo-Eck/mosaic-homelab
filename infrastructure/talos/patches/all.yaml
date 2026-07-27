@@ -1,6 +1,6 @@
 # Applied to EVERY node (control-plane + workers).
 # Per-node values (hostname, static IP, install disk, certSANs) are generated
-# from the topology map in tofu/talos/main.tf, so they're not repeated here.
+# from the topology map in infrastructure/talos/main.tf, so they're not repeated here.
 #
 # Networking uses Talos defaults (Flannel CNI + kube-proxy) — nothing to set.
 machine:

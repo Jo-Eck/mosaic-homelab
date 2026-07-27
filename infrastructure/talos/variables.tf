@@ -1,5 +1,5 @@
 variable "talos_version" {
-  description = "Talos version (keep in sync with tofu/proxmox and .mise.toml)"
+  description = "Talos version (keep in sync with infrastructure/proxmox and .mise.toml)"
   type        = string
   default     = "v1.13.7"
 }

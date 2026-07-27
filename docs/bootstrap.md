@@ -67,14 +67,14 @@ age-keygen -o cluster.agekey    # for Flux (lives in-cluster)
 
 - Create a **private bucket** `mosaic-tofu-state` and an **application key**
   scoped to it. Note the region + S3 endpoint.
-- Adjust `bucket`/`region`/`endpoints` in `tofu/*/backend.tf` if they differ.
+- Adjust `bucket`/`region`/`endpoints` in `infrastructure/*/backend.tf` if they differ.
 
 ## 4. The Pi runner
 
 ```bash
-# From your workstation. Run Ansible from the ansible/ dir so its ansible.cfg
+# From your workstation. Run Ansible from the hosts/ dir so its ansible.cfg
 # (inventory, roles, and collections paths) is loaded:
-cd ansible
+cd hosts
 ansible-galaxy collection install -r requirements.yml
 ansible-playbook -i inventory/hosts.yml playbooks/pi-runner.yml -K
 cd ..
@@ -110,7 +110,7 @@ sudo ./svc.sh start
 
 ```bash
 # Proxmox module
-cd tofu/proxmox
+cd infrastructure/proxmox
 cp terraform.tfvars.example terraform.tfvars      # set endpoint, schematic id, network
 cp secrets.sops.yaml.example secrets.sops.yaml    # set the API token, then:
 sops --encrypt --in-place secrets.sops.yaml
@@ -123,13 +123,13 @@ cp terraform.tfvars.example terraform.tfvars      # set versions, gateway, insta
 ## 6. First apply (manual)
 
 ```bash
-# Host config (run Ansible from the ansible/ dir so ansible.cfg is loaded)
-cd ansible
+# Host config (run Ansible from the hosts/ dir so ansible.cfg is loaded)
+cd hosts
 ansible-playbook -i inventory/hosts.yml playbooks/pve-hosts.yml -K
 cd ..
 
 # VMs + Talos image
-cd tofu/proxmox && tofu init && tofu apply
+cd infrastructure/proxmox && tofu init && tofu apply
 
 # Now add DHCP reservations on the router: map each VM MAC (BC:24:11:00:00:4x)
 # to its .4x IP. Talos boots the ISO via DHCP in maintenance mode; the
@@ -155,7 +155,7 @@ kubectl -n flux-system create secret generic sops-age \
 export GITHUB_TOKEN=<personal PAT, repo scope>
 flux bootstrap github \
   --owner=Jo-Eck --repository=MOSAIC --branch=main \
-  --path=kubernetes/clusters/mosaic --personal
+  --path=gitops/clusters/mosaic --personal
 
 flux get kustomizations --watch    # infrastructure -> apps
 ```
@@ -175,18 +175,18 @@ flux get kustomizations --watch    # infrastructure -> apps
 | Value | Where |
 |-------|-------|
 | `infra` / `cluster` age **public** keys | `.sops.yaml` |
-| Proxmox API token | `tofu/proxmox/secrets.sops.yaml` (encrypted) |
-| Proxmox endpoint (Tailscale name) | `tofu/proxmox/terraform.tfvars` |
-| Talos Factory **schematic ID** | `tofu/proxmox/terraform.tfvars` |
-| LAN gateway / CIDR / nameservers | `tofu/{proxmox,talos}/terraform.tfvars` |
-| Node IPs / vmids / host placement | `talos_nodes` in `tofu/proxmox/variables.tf` |
+| Proxmox API token | `infrastructure/proxmox/secrets.sops.yaml` (encrypted) |
+| Proxmox endpoint (Tailscale name) | `infrastructure/proxmox/terraform.tfvars` |
+| Talos Factory **schematic ID** | `infrastructure/proxmox/terraform.tfvars` |
+| LAN gateway / CIDR / nameservers | `infrastructure/{proxmox,talos}/terraform.tfvars` |
+| Node IPs / vmids / host placement | `talos_nodes` in `infrastructure/proxmox/variables.tf` |
 | DHCP reservations (MAC → IP) | your router |
-| Datastore names | `tofu/proxmox/terraform.tfvars` |
-| Talos / Kubernetes versions | `tofu/talos/terraform.tfvars`, `.mise.toml` |
-| B2 bucket / region / endpoint | `tofu/*/backend.tf` |
+| Datastore names | `infrastructure/proxmox/terraform.tfvars` |
+| Talos / Kubernetes versions | `infrastructure/talos/terraform.tfvars`, `.mise.toml` |
+| B2 bucket / region / endpoint | `infrastructure/*/backend.tf` |
 | B2 keys + age key path | Pi runner `EnvironmentFile` |
-| GitHub user for SSH keys | `ansible/group_vars/all.yml` (`github_ssh_key_user`) |
-| Runner version | `ansible/roles/runner/defaults/main.yml` |
+| GitHub user for SSH keys | `hosts/group_vars/all.yml` (`github_ssh_key_user`) |
+| Runner version | `hosts/roles/runner/defaults/main.yml` |
 
 ## Backup / DR (the short list)
 

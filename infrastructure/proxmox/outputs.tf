@@ -1,4 +1,4 @@
-# Consumed by the tofu/talos module via terraform_remote_state.
+# Consumed by the infrastructure/talos module via terraform_remote_state.
 output "talos_nodes" {
   description = "Full Talos node topology (role, ip, pve_node, ...)"
   value       = var.talos_nodes

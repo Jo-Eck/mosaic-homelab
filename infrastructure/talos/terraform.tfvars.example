@@ -1,5 +1,5 @@
 # Copy to terraform.tfvars and adjust. Keep versions mutually compatible and in
-# sync with tofu/proxmox + .mise.toml.
+# sync with infrastructure/proxmox + .mise.toml.
 #   cp terraform.tfvars.example terraform.tfvars
 
 talos_version      = "v1.13.7"

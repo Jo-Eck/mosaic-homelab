@@ -3,8 +3,7 @@ name: plan
 on:
   pull_request:
     paths:
-      - "tofu/**"
-      - "talos/**"
+      - "infrastructure/**"
       - ".github/workflows/**"
 
 permissions:
@@ -24,7 +23,7 @@ jobs:
         module: [proxmox, talos]
     defaults:
       run:
-        working-directory: tofu/${{ matrix.module }}
+        working-directory: infrastructure/${{ matrix.module }}
     steps:
       - uses: actions/checkout@v4
 

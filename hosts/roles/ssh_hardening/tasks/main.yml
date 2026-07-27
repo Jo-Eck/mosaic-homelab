@@ -37,7 +37,7 @@
     dest: /etc/ssh/sshd_config.d/10-mosaic.conf
     mode: "0644"
     content: |
-      # Managed by MOSAIC — ansible/roles/ssh_hardening. Do not edit by hand.
+      # Managed by MOSAIC — hosts/roles/ssh_hardening. Do not edit by hand.
       PermitRootLogin {{ ssh_permit_root_login }}
       PubkeyAuthentication yes
       {% if ssh_disable_password_auth | bool %}

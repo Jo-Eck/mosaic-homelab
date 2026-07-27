@@ -4,8 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "tofu/**"
-      - "talos/**"
+      - "infrastructure/**"
 
 # Never run two applies at once (protects state + the cluster).
 concurrency:
@@ -22,7 +21,7 @@ jobs:
     environment: production
     defaults:
       run:
-        working-directory: tofu/proxmox
+        working-directory: infrastructure/proxmox
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
@@ -35,12 +34,12 @@ jobs:
     environment: production
     defaults:
       run:
-        working-directory: tofu/talos
+        working-directory: infrastructure/talos
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
       - run: tofu init -input=false
       - run: tofu apply -input=false -auto-approve
 
-  # The Kubernetes/app layer is reconciled by Flux from kubernetes/clusters/mosaic
-  # — there is no apply step here. Merging changes under kubernetes/** is enough.
+  # The Kubernetes/app layer is reconciled by Flux from gitops/clusters/mosaic
+  # — there is no apply step here. Merging changes under gitops/** is enough.

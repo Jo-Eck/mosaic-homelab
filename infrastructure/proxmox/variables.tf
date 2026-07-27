@@ -17,9 +17,9 @@ variable "cluster_name" {
 
 # --- Talos image (built via https://factory.talos.dev) --------------------
 variable "talos_version" {
-  description = "Talos version; keep in sync with tofu/talos and .mise.toml"
+  description = "Talos version; keep in sync with infrastructure/talos and .mise.toml"
   type        = string
-  default     = "v1.13.7" # keep in sync with tofu/talos + .mise.toml talosctl
+  default     = "v1.13.7" # keep in sync with infrastructure/talos + .mise.toml talosctl
 }
 
 variable "talos_schematic_id" {

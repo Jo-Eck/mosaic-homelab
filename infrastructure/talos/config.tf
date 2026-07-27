@@ -11,8 +11,8 @@ data "talos_machine_configuration" "this" {
   kubernetes_version = var.kubernetes_version
 
   config_patches = [
-    file("${path.module}/../../talos/patches/all.yaml"),
-    file("${path.module}/../../talos/patches/${each.value.role}.yaml"),
+    file("${path.module}/patches/all.yaml"),
+    file("${path.module}/patches/${each.value.role}.yaml"),
     local.node_patches[each.key],
     local.hostname_patches[each.key],
   ]

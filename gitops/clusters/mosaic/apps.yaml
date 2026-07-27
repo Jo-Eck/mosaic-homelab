@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./kubernetes/apps
+  path: ./gitops/apps
   prune: true
   # Apps only reconcile once the platform (CNI, cert-manager, storage) is ready.
   dependsOn:

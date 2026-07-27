@@ -19,7 +19,7 @@ jobs:
         module: [proxmox, talos]
     defaults:
       run:
-        working-directory: tofu/${{ matrix.module }}
+        working-directory: infrastructure/${{ matrix.module }}
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2

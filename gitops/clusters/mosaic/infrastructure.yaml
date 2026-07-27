@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./kubernetes/infrastructure
+  path: ./gitops/infrastructure
   prune: true
   wait: true
   sourceRef:

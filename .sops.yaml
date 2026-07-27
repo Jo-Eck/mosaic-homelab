@@ -14,13 +14,13 @@
 
 creation_rules:
   # ---- Infra secrets (Pi runner: Tofu + Ansible + Talos PKI) --------------
-  - path_regex: (tofu|ansible|talos)/.*\.sops\.(ya?ml|json|env)$
+  - path_regex: (infrastructure|hosts)/.*\.sops\.(ya?ml|json|env)$
     key_groups:
       - age:
           - "age12yejewjve2zf00f0qfv7x8uc8av8rgqju2qk9vaye9uagmaj99yq589uzp"
 
   # ---- Cluster secrets (decrypted in-cluster by Flux) ---------------------
-  - path_regex: kubernetes/.*\.sops\.(ya?ml|json|env)$
+  - path_regex: gitops/.*\.sops\.(ya?ml|json|env)$
     encrypted_regex: "^(data|stringData)$"
     key_groups:
       - age:
