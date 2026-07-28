@@ -1,0 +1,106 @@
+# Phase 2 smoke test: a tiny vanilla server that proves storage (local-path PVC),
+# exposure (NodePort), and the Flux app pipeline end-to-end. Once this works,
+# Phase 3 (MeatballCraft) reuses the same shape with the modpack + more memory.
+# Connect from your client at  <any-worker-IP>:30565  (e.g. 192.168.8.41:30565).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mc-vanilla-data
+  namespace: minecraft
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mc-vanilla
+  namespace: minecraft
+  labels:
+    app: mc-vanilla
+spec:
+  replicas: 1
+  # RWO local-path volume can only attach to one pod: never run two at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mc-vanilla
+  template:
+    metadata:
+      labels:
+        app: mc-vanilla
+    spec:
+      # No runAsUser here: the itzg image intentionally starts as root to fix
+      # /data ownership, then drops to uid/gid 1000 itself. Talos enforces the
+      # "baseline" PodSecurity profile, which permits this (running as root is
+      # only flagged by the stricter "restricted" audit/warn, not enforced).
+      containers:
+        - name: minecraft
+          image: itzg/minecraft-server:latest
+          env:
+            - name: EULA
+              value: "TRUE"
+            - name: TYPE
+              value: "VANILLA"
+            - name: VERSION
+              value: "LATEST"
+            - name: MEMORY
+              value: "2G"
+            - name: MOTD
+              value: "MOSAIC smoke test"
+          ports:
+            - name: minecraft
+              containerPort: 25565
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1536Mi"
+            limits:
+              memory: "3Gi"
+          # Give a fresh server time to download the jar + generate the world
+          # before liveness starts killing it (~5 min budget).
+          startupProbe:
+            exec:
+              command: ["mc-health"]
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command: ["mc-health"]
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["mc-health"]
+            initialDelaySeconds: 120
+            periodSeconds: 20
+            failureThreshold: 6
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mc-vanilla-data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mc-vanilla
+  namespace: minecraft
+spec:
+  type: NodePort
+  selector:
+    app: mc-vanilla
+  ports:
+    - name: minecraft
+      protocol: TCP
+      port: 25565
+      targetPort: 25565
+      nodePort: 30565
