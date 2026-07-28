@@ -145,27 +145,48 @@ talosctl health --nodes 192.168.8.40
 kubectl get nodes -o wide      # 4 nodes, Ready
 ```
 
-## 7. Flux bootstrap
+## 7. Flux bootstrap (one-time setup, then automated)
+
+Flux is bootstrapped by the **`infrastructure/flux`** Tofu module, so a
+from-scratch cluster wires itself up to GitOps with **no manual `flux bootstrap`**
+— the `flux` job in `apply.yml` (and the `tofu apply` below) handles it, and it's
+idempotent. Two one-time inputs are required:
+
+1. **A GitHub PAT** allowed to add a repo deploy key. Store it as the
+   `FLUX_GITHUB_TOKEN` GitHub Actions secret (repo → Settings → Secrets and
+   variables → Actions). CI exposes it to Tofu as `TF_VAR_github_token`.
+
+2. **The cluster age private key**, committed *encrypted with the infra key* so
+   CI can materialise the `flux-system/sops-age` decryption secret on every
+   rebuild:
+
+   ```bash
+   cd infrastructure/flux
+   cp cluster-age.sops.yaml.example cluster-age.sops.yaml
+   # set `agekey:` to the contents of cluster.agekey (AGE-SECRET-KEY-...)
+   sops --encrypt --in-place cluster-age.sops.yaml   # infra key, per .sops.yaml
+   ```
+
+Then bootstrap Flux (a third module in the manual first apply):
 
 ```bash
-# Cluster decryption key
-kubectl -n flux-system create secret generic sops-age \
-  --from-file=age.agekey=cluster.agekey   # (create ns first if needed)
+cd infrastructure/flux
+export TF_VAR_github_token=<PAT>      # repo-admin, to register the deploy key
+tofu init && tofu apply
 
-export GITHUB_TOKEN=<personal PAT, repo scope>
-flux bootstrap github \
-  --owner=Jo-Eck --repository=MOSAIC --branch=main \
-  --path=gitops/clusters/mosaic --personal
-
-flux get kustomizations --watch    # infrastructure -> apps
+flux get kustomizations --watch       # infrastructure -> apps
 ```
+
+After this, tearing the cluster down and re-running `apply.yml` (proxmox → talos
+→ flux) re-bootstraps Flux automatically — no hand steps.
 
 ## 8. Hand over to GitOps
 
 - In GitHub: create a **`production` Environment** with yourself as a required
   reviewer (gates `apply.yml` until you trust it).
 - From now on: open a PR → `plan.yml` posts the diff → merge → `apply.yml`
-  applies infra; Flux reconciles the cluster. `drift.yml` runs nightly.
+  applies infra (proxmox → talos → flux); Flux reconciles the cluster.
+  `drift.yml` runs nightly.
 - (Optional) enable Renovate to PR version bumps.
 
 ---
@@ -185,6 +206,8 @@ flux get kustomizations --watch    # infrastructure -> apps
 | Talos / Kubernetes versions | `infrastructure/talos/terraform.tfvars`, `.mise.toml` |
 | B2 bucket / region / endpoint | `infrastructure/*/backend.tf` |
 | B2 keys + age key path | Pi runner `EnvironmentFile` |
+| Flux repo-admin PAT | `FLUX_GITHUB_TOKEN` GitHub Actions secret |
+| Cluster age **private** key (encrypted) | `infrastructure/flux/cluster-age.sops.yaml` |
 | GitHub user for SSH keys | `hosts/group_vars/all.yml` (`github_ssh_key_user`) |
 | Runner version | `hosts/roles/runner/defaults/main.yml` |
 

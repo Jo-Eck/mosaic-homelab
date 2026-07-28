@@ -1,0 +1,11 @@
+# Copy to cluster-age.sops.yaml, paste your CLUSTER age PRIVATE key, then encrypt
+# it IN PLACE before committing (the plaintext form must never be committed):
+#
+#   cp cluster-age.sops.yaml.example cluster-age.sops.yaml
+#   # set `agekey` below to the contents of cluster.agekey (AGE-SECRET-KEY-...)
+#   sops --encrypt --in-place cluster-age.sops.yaml
+#
+# .sops.yaml routes infrastructure/**/*.sops.yaml to the INFRA age key, so the Pi
+# runner (which holds it) decrypts this in CI and creates flux-system/sops-age.
+# This is the SAME key whose PUBLIC half is the cluster recipient in .sops.yaml.
+agekey: AGE-SECRET-KEY-REPLACE-WITH-YOUR-CLUSTER-PRIVATE-KEY

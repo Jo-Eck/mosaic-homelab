@@ -41,5 +41,25 @@ jobs:
       - run: tofu init -input=false
       - run: tofu apply -input=false -auto-approve
 
-  # The Kubernetes/app layer is reconciled by Flux from gitops/clusters/mosaic
-  # — there is no apply step here. Merging changes under gitops/** is enough.
+  # Bootstrap Flux so a from-scratch cluster wires itself up to GitOps with no
+  # manual `flux bootstrap`. Idempotent (no-op once in place). Needs a repo-admin
+  # PAT to register Flux's deploy key; B2 + the infra age key (to decrypt the
+  # cluster age key into flux-system/sops-age) come from the runner's systemd
+  # EnvironmentFile.
+  flux:
+    needs: talos
+    runs-on: [self-hosted, linux, ARM64, mosaic]
+    environment: production
+    defaults:
+      run:
+        working-directory: infrastructure/flux
+    env:
+      TF_VAR_github_token: ${{ secrets.FLUX_GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: tofu init -input=false
+      - run: tofu apply -input=false -auto-approve
+
+  # Flux (bootstrapped above) then reconciles the Kubernetes app layer from
+  # gitops/clusters/mosaic — merging changes under gitops/** is enough.

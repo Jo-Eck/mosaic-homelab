@@ -1,0 +1,7 @@
+# Copy to terraform.tfvars only to override defaults. The GitHub token is NOT set
+# here — it comes from TF_VAR_github_token (the FLUX_GITHUB_TOKEN Actions secret).
+github_owner      = "Jo-Eck"
+github_repository = "MOSAIC"
+github_branch     = "main"
+flux_path         = "gitops/clusters/mosaic"
+flux_version      = "v2.6.4"
