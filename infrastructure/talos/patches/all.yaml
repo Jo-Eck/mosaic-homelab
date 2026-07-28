@@ -7,9 +7,15 @@ machine:
   time:
     servers:
       - pool.ntp.org
-  kubelet:
-    extraArgs:
-      rotate-server-certificates: "true"
+  # NOTE: kubelet server-certificate rotation (rotate-server-certificates) is
+  # intentionally NOT enabled. It makes every kubelet file a
+  # kubernetes.io/kubelet-serving CSR, which Kubernetes never auto-approves
+  # (kube-controller-manager only auto-approves kubelet *client* CSRs). With no
+  # approver those CSRs stay Pending and each node console loops
+  # "server certificate rotation is enabled but the CSR is not approved".
+  # Re-enable ONLY alongside an approver (e.g. kubelet-serving-cert-approver via
+  # Flux under gitops/infrastructure) once something (metrics-server /
+  # kube-prometheus-stack) actually needs signed kubelet serving certs.
   features:
     rbac: true
     kubePrism:
