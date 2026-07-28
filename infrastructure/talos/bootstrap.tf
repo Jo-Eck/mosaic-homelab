@@ -39,7 +39,10 @@ resource "local_file" "talosconfig" {
 # Optional gate: wait until the cluster reports healthy. Talos' default Flannel
 # CNI + kube-proxy come up on their own after bootstrap.
 data "talos_cluster_health" "this" {
-  depends_on = [talos_machine_bootstrap.this]
+  depends_on = [
+    talos_machine_bootstrap.this,
+    talos_machine_configuration_apply.this,
+  ]
 
   client_configuration = talos_machine_secrets.this.client_configuration
   endpoints            = [local.cp_ip]
