@@ -7,4 +7,4 @@ pve_no_subscription_repo: true
 # public keys (https://github.com/<user>.keys). Add break-glass keys that aren't
 # on GitHub to ssh_authorized_keys.
 github_ssh_key_user: Jo-Eck
-ssh_authorized_keys: []
+ssh_authorized_keys: [ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGa7HenbAhZMD1xJ1NG61A6lXsCWdFTQUT1QL05YKevW jo-eck-mac]
