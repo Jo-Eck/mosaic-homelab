@@ -1,0 +1,262 @@
+---
+# Deploys MeatballCraft (MC 1.12.2 / Cleanroom / Java 25) natively under systemd.
+# Verified mechanics (from jchung01/Cleanroom-ServerStart-Scripts): the Cleanroom
+# installer URL, `java -jar installer --installServer <dir>`, and the resulting
+# run jar `cleanroom-<ver>.jar`. Unknowns flagged inline: server-pack zip layout
+# and the Cleanroom companion mods (Fugue/Scalar).
+
+- name: Fail fast without a server-pack source
+  ansible.builtin.assert:
+    that: (mc_server_pack_local_src | length > 0) or (mc_server_pack_url | length > 0)
+    fail_msg: >-
+      No server pack set. Provide mc_server_pack_local_src (a zip on the Ansible
+      controller — e.g. exported from your Prism instance or grabbed from the
+      MeatballCraft Discord) or mc_server_pack_url (a direct URL). CurseForge only
+      hosts the stale 0.18.1 server pack.
+
+- name: Resolve loader jar + installer URL
+  ansible.builtin.set_fact:
+    mc_loader_jar: >-
+      {{ ('cleanroom-' ~ mc_cleanroom_version ~ '.jar') if mc_loader == 'cleanroom'
+         else ('forge-' ~ mc_mc_version ~ '-' ~ mc_forge_version ~ '.jar') }}
+    mc_loader_installer_url: >-
+      {{ ('https://repo.cleanroommc.com/releases/com/cleanroommc/cleanroom/' ~ mc_cleanroom_version ~ '/cleanroom-' ~ mc_cleanroom_version ~ '-installer.jar')
+         if mc_loader == 'cleanroom'
+         else ('https://maven.minecraftforge.net/net/minecraftforge/forge/' ~ mc_mc_version ~ '-' ~ mc_forge_version ~ '/forge-' ~ mc_mc_version ~ '-' ~ mc_forge_version ~ '-installer.jar') }}
+
+# --- Java (Temurin via Adoptium) -----------------------------------------
+- name: Install base packages
+  ansible.builtin.apt:
+    name: [curl, unzip, ca-certificates, gnupg, openssl, procps, tar, gzip]
+    state: present
+    update_cache: true
+
+- name: Ensure apt keyring dir exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Add Adoptium GPG key
+  ansible.builtin.get_url:
+    url: https://packages.adoptium.net/artifactory/api/gpg/key/public
+    dest: /etc/apt/keyrings/adoptium.asc
+    mode: "0644"
+
+- name: Add Adoptium apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb {{ ansible_distribution_release }} main"
+    filename: adoptium
+    state: present
+
+- name: Install Temurin {{ mc_java_version }} JDK
+  ansible.builtin.apt:
+    name: "temurin-{{ mc_java_version }}-jdk"
+    state: present
+    update_cache: true
+
+# --- User / directories --------------------------------------------------
+- name: Create minecraft group
+  ansible.builtin.group:
+    name: "{{ mc_group }}"
+    system: true
+
+- name: Create minecraft user
+  ansible.builtin.user:
+    name: "{{ mc_user }}"
+    group: "{{ mc_group }}"
+    system: true
+    home: "{{ mc_dir }}"
+    create_home: false
+    shell: /usr/sbin/nologin
+
+- name: Create server + backup directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ mc_user }}"
+    group: "{{ mc_group }}"
+    mode: "0755"
+  loop:
+    - "{{ mc_dir }}"
+    - "{{ mc_backups_dir }}"
+
+- name: Create secret directory
+  ansible.builtin.file:
+    path: /etc/meatballcraft
+    state: directory
+    owner: root
+    group: "{{ mc_group }}"
+    mode: "0750"
+
+# --- Server pack (mods + config) -----------------------------------------
+# One zip, from either a local file (Prism export / Discord download) or a URL.
+# Local wins if both are set.
+- name: Stage server pack from a local file
+  ansible.builtin.copy:
+    src: "{{ mc_server_pack_local_src }}"
+    dest: "{{ mc_dir }}/server-pack.zip"
+    owner: "{{ mc_user }}"
+    group: "{{ mc_group }}"
+    mode: "0644"
+  when: mc_server_pack_local_src | length > 0
+
+- name: Download the server pack from a URL
+  ansible.builtin.get_url:
+    url: "{{ mc_server_pack_url }}"
+    dest: "{{ mc_dir }}/server-pack.zip"
+    checksum: "{{ ('sha256:' ~ mc_server_pack_sha256) if mc_server_pack_sha256 | length > 0 else omit }}"
+    owner: "{{ mc_user }}"
+    group: "{{ mc_group }}"
+    mode: "0644"
+  when: mc_server_pack_local_src | length == 0
+
+# NOTE: assumes the zip lays mods/, config/, etc. at the archive root. If the pack
+# nests everything under a top-level folder, extract + move (or set the right
+# `extra_opts: [-j]` / a subdir) once we see the real structure on first run.
+- name: Extract the server pack
+  ansible.builtin.unarchive:
+    src: "{{ mc_dir }}/server-pack.zip"
+    dest: "{{ mc_dir }}"
+    remote_src: true
+    owner: "{{ mc_user }}"
+    group: "{{ mc_group }}"
+    creates: "{{ mc_dir }}/mods"
+  notify: Restart meatballcraft
+
+# --- Loader install (Cleanroom/Forge --installServer) --------------------
+- name: Download the {{ mc_loader }} installer
+  ansible.builtin.get_url:
+    url: "{{ mc_loader_installer_url }}"
+    dest: "{{ mc_dir }}/loader-installer.jar"
+    owner: "{{ mc_user }}"
+    group: "{{ mc_group }}"
+    mode: "0644"
+
+- name: Run --installServer (produces {{ mc_loader_jar }} + libraries/)
+  ansible.builtin.command:
+    cmd: "{{ mc_java_bin }} -jar {{ mc_dir }}/loader-installer.jar --installServer {{ mc_dir }}"
+    chdir: "{{ mc_dir }}"
+    creates: "{{ mc_dir }}/{{ mc_loader_jar }}"
+  become: true
+  become_user: "{{ mc_user }}"
+  notify: Restart meatballcraft
+
+# --- RCON password (localhost-only; generated on the box) ----------------
+- name: Generate RCON password once
+  ansible.builtin.shell: "umask 077 && openssl rand -hex 24 > /etc/meatballcraft/rcon.pass"
+  args:
+    creates: /etc/meatballcraft/rcon.pass
+
+- name: Read RCON password
+  ansible.builtin.slurp:
+    src: /etc/meatballcraft/rcon.pass
+  register: _rcon_pass
+
+- name: Register RCON password fact
+  ansible.builtin.set_fact:
+    mc_rcon_password: "{{ _rcon_pass.content | b64decode | trim }}"
+
+- name: Write RCON env (systemd ExecStop + helper scripts)
+  ansible.builtin.copy:
+    dest: /etc/meatballcraft/rcon.env
+    content: "RCON_PASSWORD={{ mc_rcon_password }}\n"
+    owner: root
+    group: "{{ mc_group }}"
+    mode: "0640"
+
+- name: Install rcon-cli (gorcon)
+  ansible.builtin.unarchive:
+    src: "https://github.com/gorcon/rcon-cli/releases/download/v{{ mc_rcon_cli_version }}/rcon-{{ mc_rcon_cli_version }}-amd64_linux.tar.gz"
+    dest: /usr/local/bin
+    remote_src: true
+    extra_opts: ["--strip-components=1", "--wildcards", "*/rcon"]
+    creates: /usr/local/bin/rcon
+
+# --- Config files --------------------------------------------------------
+- name: Template eula.txt
+  ansible.builtin.template:
+    src: eula.txt.j2
+    dest: "{{ mc_dir }}/eula.txt"
+    owner: "{{ mc_user }}"
+    group: "{{ mc_group }}"
+    mode: "0644"
+  notify: Restart meatballcraft
+
+- name: Template server.properties
+  ansible.builtin.template:
+    src: server.properties.j2
+    dest: "{{ mc_dir }}/server.properties"
+    owner: "{{ mc_user }}"
+    group: "{{ mc_group }}"
+    mode: "0644"
+  notify: Restart meatballcraft
+
+- name: Install mc-console helper (rcon wrapper)
+  ansible.builtin.template:
+    src: mc-console.sh.j2
+    dest: /usr/local/bin/mc-console
+    mode: "0755"
+
+# --- systemd service -----------------------------------------------------
+- name: Install systemd unit
+  ansible.builtin.template:
+    src: meatballcraft.service.j2
+    dest: /etc/systemd/system/meatballcraft.service
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart meatballcraft
+
+- name: Enable + start meatballcraft
+  ansible.builtin.systemd:
+    name: meatballcraft
+    enabled: true
+    state: started
+    daemon_reload: true
+
+# --- Backups -------------------------------------------------------------
+- name: Install world backup script
+  ansible.builtin.template:
+    src: mc-backup.sh.j2
+    dest: /usr/local/bin/mc-backup
+    mode: "0755"
+  when: mc_backup_enabled
+
+- name: Install backup service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/meatballcraft-backup.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=MeatballCraft world backup
+      [Service]
+      Type=oneshot
+      User={{ mc_user }}
+      Group={{ mc_group }}
+      ExecStart=/usr/local/bin/mc-backup
+  when: mc_backup_enabled
+  notify: Reload systemd
+
+- name: Install backup timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/meatballcraft-backup.timer
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Daily MeatballCraft world backup
+      [Timer]
+      OnCalendar=*-*-* {{ '%02d' | format(mc_backup_hour) }}:00:00
+      Persistent=true
+      [Install]
+      WantedBy=timers.target
+  when: mc_backup_enabled
+  notify: Reload systemd
+
+- name: Enable backup timer
+  ansible.builtin.systemd:
+    name: meatballcraft-backup.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: mc_backup_enabled

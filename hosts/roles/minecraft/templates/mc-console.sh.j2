@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Managed by MOSAIC — hosts/roles/minecraft.
+# Send a console command to the running server, e.g:  mc-console "say hello"
+# With no args, opens an interactive RCON shell.
+set -euo pipefail
+# shellcheck source=/dev/null
+source /etc/meatballcraft/rcon.env
+exec /usr/local/bin/rcon -a "127.0.0.1:{{ mc_rcon_port }}" -p "$RCON_PASSWORD" "$@"

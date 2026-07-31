@@ -10,6 +10,11 @@ terraform {
       source  = "carlpett/sops"
       version = ">= 1.1.1"
     }
+    # Fetches the GitHub public keys that seed root SSH on the Minecraft LXC.
+    http = {
+      source  = "hashicorp/http"
+      version = ">= 3.4.0"
+    }
   }
 }
 

@@ -92,3 +92,72 @@ variable "talos_nodes" {
     "talos-w-3"  = { role = "worker", pve_node = "legion", vmid = 8003, cores = 4, memory = 12288, disk_size = 80, ip = "192.168.8.43", mac = "BC:24:11:00:00:43" }
   }
 }
+
+# --- Minecraft LXC (MeatballCraft, MC 1.12.2 / Forge) --------------------
+# A native, unprivileged Debian LXC on the Legion node. Sized for a heavy
+# 1.12.2 expert pack (8G heap + headroom). The in-container server (JDK,
+# modpack, systemd unit) is the `minecraft` Ansible role in hosts/. The static
+# IP sits below the DHCP pool alongside the Talos VMs (.40-.43 = Talos,
+# .44 = this container, .51 = Pi).
+variable "minecraft_pve_node" {
+  description = "PVE node that hosts the Minecraft LXC (Legion = faster single-thread)"
+  type        = string
+  default     = "legion"
+}
+
+variable "minecraft_vmid" {
+  description = "Proxmox guest ID for the Minecraft LXC"
+  type        = number
+  default     = 8100
+}
+
+variable "minecraft_hostname" {
+  type    = string
+  default = "meatballcraft"
+}
+
+variable "minecraft_cores" {
+  description = "vCPU cores for the LXC (1.12.2 is single-thread bound; 4 is plenty)"
+  type        = number
+  default     = 4
+}
+
+variable "minecraft_memory" {
+  description = "LXC RAM in MiB (8G heap + ~4G for metaspace/off-heap/OS)"
+  type        = number
+  default     = 12288
+}
+
+variable "minecraft_swap" {
+  description = "LXC swap in MiB"
+  type        = number
+  default     = 2048
+}
+
+variable "minecraft_disk_size" {
+  description = "LXC rootfs size in GiB (grows with the dimension-heavy world; resizable later)"
+  type        = number
+  default     = 32
+}
+
+variable "minecraft_ip" {
+  description = "Static IPv4 (no prefix) for the LXC, below the DHCP pool"
+  type        = string
+  default     = "192.168.8.44"
+}
+
+variable "ssh_key_github_user" {
+  description = "GitHub user whose public keys seed root SSH on the LXC for Ansible (matches hosts/group_vars/all.yml)"
+  type        = string
+  default     = "Jo-Eck"
+}
+
+variable "debian_ct_template_url" {
+  description = <<-EOT
+    Debian LXC template URL, downloaded to the node's image datastore. Pin/bump
+    deliberately — verify the current filename at
+    http://download.proxmox.com/images/system/ (older point releases get pruned).
+  EOT
+  type        = string
+  default     = "http://download.proxmox.com/images/system/debian-12-standard_12.7-1_amd64.tar.zst"
+}

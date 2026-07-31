@@ -23,3 +23,13 @@ output "worker_ips" {
 output "vm_ids" {
   value = { for k, v in proxmox_virtual_environment_vm.talos : k => v.vm_id }
 }
+
+# --- Minecraft LXC -------------------------------------------------------
+output "minecraft_ip" {
+  description = "MeatballCraft server / Ansible target address"
+  value       = var.minecraft_ip
+}
+
+output "minecraft_vmid" {
+  value = proxmox_virtual_environment_container.minecraft.vm_id
+}

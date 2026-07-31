@@ -49,7 +49,7 @@ hand, since they can affect cluster quorum.
 - make application of ansible passwordless
 - graphana dashboard
 - fix statelocking in b2
-- minecraft lxc
+- minecraft lxc — MeatballCraft (Cleanroom/Java 25): Tofu LXC + `minecraft` Ansible role done; needs server-pack URL
 - arr stack
 
 ## Getting started

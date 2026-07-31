@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: minecraft
-  # No PodSecurity label needed: the itzg image runs unprivileged as uid/gid 1000
-  # with no hostPath/host namespaces, so it satisfies Talos' default "baseline".

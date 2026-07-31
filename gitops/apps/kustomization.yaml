@@ -2,5 +2,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # Add app groups here as they come online, e.g.:
 #   - media
-resources:
-  - minecraft
+# Minecraft (MeatballCraft) now runs as a Proxmox LXC, not in-cluster —
+# see infrastructure/ for the container + Ansible config.
+resources: []

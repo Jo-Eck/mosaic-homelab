@@ -1,0 +1,29 @@
+[Unit]
+Description=MeatballCraft ({{ mc_loader }} {{ mc_cleanroom_version if mc_loader == 'cleanroom' else mc_forge_version }}, MC {{ mc_mc_version }}, Java {{ mc_java_version }}) — MOSAIC
+After=network-online.target
+Wants=network-online.target
+# Crash-loop guard (replaces the script's CRASH_COUNT/CRASH_TIMER): give up after
+# mc_start_limit_burst failures within mc_start_limit_interval_sec.
+StartLimitIntervalSec={{ mc_start_limit_interval_sec }}
+StartLimitBurst={{ mc_start_limit_burst }}
+
+[Service]
+Type=simple
+User={{ mc_user }}
+Group={{ mc_group }}
+WorkingDirectory={{ mc_dir }}
+EnvironmentFile=/etc/meatballcraft/rcon.env
+ExecStart={{ mc_java_bin }} -Xms{{ mc_heap }} -Xmx{{ mc_heap }} {{ (mc_java_args_java8 if (mc_java_version | int) <= 8 else (mc_java_args_zgc if mc_gc == 'zgc' else mc_java_args_g1)) | trim }} -jar {{ mc_dir }}/{{ mc_loader_jar }} nogui
+# Graceful stop: RCON `stop` flushes + saves the world. If RCON is unresponsive,
+# systemd falls back to SIGTERM (MC's shutdown hook also saves) then SIGKILL.
+ExecStop=/usr/local/bin/rcon -a 127.0.0.1:{{ mc_rcon_port }} -p ${RCON_PASSWORD} stop
+Restart=on-failure
+RestartSec={{ mc_restart_sec }}
+TimeoutStopSec={{ mc_stop_timeout_sec }}
+KillSignal=SIGTERM
+# Treat clean stop / SIGINT(130) / SIGTERM(143) as success so they don't trip
+# the on-failure restart.
+SuccessExitStatus=0 130 143
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+---
+# Deploy the MeatballCraft LXC (created by infrastructure/proxmox/minecraft.tf).
+#
+#   ansible-playbook playbooks/minecraft.yml
+#
+# Set the server-pack URL first (CurseForge is auth-gated) in
+# hosts/group_vars/apps.yml or with: -e mc_server_pack_url=<direct-forgecdn-url>
+- name: Deploy MeatballCraft server
+  hosts: apps
+  become: true
+  roles:
+    - role: minecraft

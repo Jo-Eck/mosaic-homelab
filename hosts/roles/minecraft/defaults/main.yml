@@ -1,0 +1,106 @@
+# MeatballCraft (Minecraft 1.12.2) run natively under systemd in the LXC created
+# by infrastructure/proxmox/minecraft.tf.
+#
+# Defaults to classic Forge + Java 8 — the simplest, tested pairing that ships
+# with the CurseForge server pack. Switching to the Cleanroom loader + modern
+# Java (for ~2x faster loads / less GC lag) is just mc_loader/mc_java_version
+# below; Cleanroom runs the same mods on the same MC version, so it keeps the
+# world.
+#
+# Install/launch logic + crash-loop protection are adapted from
+# jchung01/Cleanroom-ServerStart-Scripts (MIT, forked from AllTheMods' ServerStart
+# scripts); we drop its interactive console wrapper and let systemd supervise.
+
+# --- Identity / paths ----------------------------------------------------
+mc_user: minecraft
+mc_group: minecraft
+mc_dir: /opt/meatballcraft
+mc_backups_dir: /opt/meatballcraft-backups
+
+# --- Versions ------------------------------------------------------------
+mc_mc_version: "1.12.2"
+mc_loader: forge # forge (Java 8, simplest) | cleanroom (modern Java, faster)
+mc_forge_version: "14.23.5.2860" # final 1.12.2 Forge; ships with the server pack
+# Cleanroom version — only used when mc_loader=cleanroom. MUST match the pack era:
+# 0.3.0-alpha for the 0.18 line, 0.5.17-alpha for 0.18.6.
+# Versions: https://repo.cleanroommc.com/#/releases/com/cleanroommc/cleanroom
+mc_cleanroom_version: "0.3.0-alpha"
+mc_java_version: 8            # 8 for Forge; 21+ (e.g. 25) for Cleanroom. Temurin/Adoptium.
+mc_java_bin: /usr/bin/java    # Temurin registers this alternative on a fresh box
+mc_rcon_cli_version: "0.10.3" # github.com/gorcon/rcon-cli
+
+# --- Memory / JVM --------------------------------------------------------
+mc_heap: "8G" # Xms=Xmx, pinned (AlwaysPreTouch). Legion has room to go 10G (bump container to ~15G).
+mc_gc: zgc    # (Cleanroom/modern Java only) zgc = recommended | g1 = RSS-constrained fallback
+
+# The systemd unit selects the arg set by Java version: Java <=8 -> _java8;
+# otherwise _zgc or _g1 by mc_gc. Sourced from jchung01's ServerStart README
+# (Java 8 set via brucethemoose's benchmarks).
+
+# Java 8 (Forge) — G1 with a modified Aikar set. This is the default path.
+mc_java_args_java8: >-
+  -server -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions
+  -XX:+AlwaysActAsServerClassMachine -XX:+DisableExplicitGC -XX:+AlwaysPreTouch
+  -XX:+AggressiveOpts -XX:+UseFastAccessorMethods -XX:MaxInlineLevel=15
+  -XX:MaxVectorSize=32 -XX:+UseCompressedOops -XX:ThreadPriorityPolicy=1
+  -XX:+UseDynamicNumberOfGCThreads -XX:NmethodSweepActivity=1
+  -XX:ReservedCodeCacheSize=350M -XX:-DontCompileHugeMethods
+  -XX:MaxNodeLimit=240000 -XX:NodeLimitFudgeFactor=8000 -XX:+UseFPUForSpilling
+  -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1NewSizePercent=28
+  -XX:G1HeapRegionSize=16M -XX:G1ReservePercent=20 -XX:G1MixedGCCountTarget=3
+  -XX:InitiatingHeapOccupancyPercent=10 -XX:G1MixedGCLiveThresholdPercent=90
+  -XX:G1RSetUpdatingPauseTimePercent=0 -XX:SurvivorRatio=32 -XX:MaxTenuringThreshold=1
+  -XX:G1SATBBufferEnqueueingThresholdPercent=30
+  -XX:G1ConcRefinementServiceIntervalMillis=150 -XX:G1ConcRSHotCardLimit=16
+  -Dfml.readTimeout=90 -Dfml.queryResult=confirm
+
+# Java 25 + Cleanroom — ZGC + Compact Object Headers (JEP 450). COH is
+# EXPERIMENTAL in JDK 25 so it needs -XX:+UnlockExperimentalVMOptions (the wiki's
+# "Option 1" omits it — bug). Generational ZGC is default in 25 (no -XX:+ZGenerational).
+mc_java_args_zgc: >-
+  -XX:+UnlockExperimentalVMOptions -XX:+UseCompactObjectHeaders
+  -XX:+AlwaysPreTouch -XX:+UseStringDeduplication -XX:+UseZGC
+  -Dfml.readTimeout=90 -Dfml.queryResult=confirm
+# G1 alternative for modern Java (their Java 25 "Option 2"): better if RSS-constrained.
+mc_java_args_g1: >-
+  -XX:+UnlockExperimentalVMOptions -XX:+UseCompactObjectHeaders
+  -XX:+AlwaysPreTouch -XX:+UseStringDeduplication -XX:+UseG1GC
+  -XX:G1HeapRegionSize=8M -XX:G1NewSizePercent=28
+  -Dfml.readTimeout=90 -Dfml.queryResult=confirm
+
+# --- Server pack (mods + config) -----------------------------------------
+# The role needs ONE server-pack zip. Two ways to supply it (local wins):
+#   mc_server_pack_local_src : path to a zip on the Ansible controller — e.g.
+#       exported from your Prism instance (mods/ + config/ + scripts/…), or
+#       downloaded from the pack Discord.
+#   mc_server_pack_url       : a direct URL. CurseForge only hosts a stale 0.18.1
+#       server pack; current server files come from the Discord.
+mc_server_pack_local_src: ""
+mc_server_pack_url: ""
+mc_server_pack_sha256: "" # optional; pins the URL download
+
+# --- server.properties ---------------------------------------------------
+mc_motd: "MOSAIC \u2014 MeatballCraft"
+mc_world_type: BIOMESOP # MeatballCraft overworld (needs Biomes O' Plenty, which the pack ships)
+mc_difficulty: normal
+mc_view_distance: 6 # keep modest on a heavy 1.12.2 pack
+mc_max_players: 8
+mc_online_mode: true
+mc_max_tick_time: 90000 # raise the single-tick watchdog for heavy worldgen; -1 disables it
+mc_extra_server_properties: {} # any extra key: value pairs
+
+# --- RCON (bound to localhost; graceful stop + admin console) ------------
+mc_rcon_port: 25575
+# The password is generated on the box on first run (localhost-only, so it is not
+# a repo secret) and stored in /etc/meatballcraft/rcon.pass.
+
+# --- systemd restart / crash-loop guard (mirrors CRASH_COUNT/CRASH_TIMER) -
+mc_restart_sec: 15
+mc_start_limit_interval_sec: 600
+mc_start_limit_burst: 5
+mc_stop_timeout_sec: 180 # give the world time to save on stop
+
+# --- Backups (local; point mc_backups_dir off-box for real DR) -----------
+mc_backup_enabled: true
+mc_backup_keep: 7
+mc_backup_hour: 5

@@ -1,0 +1,19 @@
+# Managed by MOSAIC - hosts/roles/minecraft. Do not edit by hand.
+motd={{ mc_motd }}
+level-type={{ mc_world_type }}
+difficulty={{ mc_difficulty }}
+view-distance={{ mc_view_distance }}
+max-players={{ mc_max_players }}
+online-mode={{ mc_online_mode | lower }}
+allow-flight=true
+enable-command-block=true
+snooper-enabled=false
+max-tick-time={{ mc_max_tick_time }}
+server-port=25565
+enable-rcon=true
+rcon.port={{ mc_rcon_port }}
+rcon.password={{ mc_rcon_password }}
+broadcast-rcon-to-ops=true
+{% for k, v in mc_extra_server_properties.items() %}
+{{ k }}={{ v }}
+{% endfor %}

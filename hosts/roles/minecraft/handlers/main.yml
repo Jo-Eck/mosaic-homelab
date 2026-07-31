@@ -1,0 +1,11 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+# Restarting a 1.12.2 modded server takes minutes; only fires when config/jars
+# actually change. Uses `stop` via RCON (ExecStop) so the world saves cleanly.
+- name: Restart meatballcraft
+  ansible.builtin.systemd:
+    name: meatballcraft
+    state: restarted

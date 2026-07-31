@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Managed by MOSAIC — hosts/roles/minecraft.
+# Consistent world snapshot: pause saves, flush, tar, resume, then rotate.
+# NOTE: backups land on the container rootfs ({{ mc_backups_dir }}). For real DR,
+# point mc_backups_dir at off-box storage (a mount) or add a PVE vzdump job.
+set -euo pipefail
+# shellcheck source=/dev/null
+source /etc/meatballcraft/rcon.env
+
+DIR="{{ mc_dir }}"
+DEST="{{ mc_backups_dir }}"
+KEEP={{ mc_backup_keep }}
+RCON=(/usr/local/bin/rcon -a "127.0.0.1:{{ mc_rcon_port }}" -p "$RCON_PASSWORD")
+ts="$(date +%Y%m%d-%H%M%S)"
+
+"${RCON[@]}" save-off   || true
+"${RCON[@]}" save-all flush || true
+sleep 5
+tar -C "$DIR" -czf "$DEST/world-$ts.tgz" world
+"${RCON[@]}" save-on    || true
+
+# Keep the newest $KEEP archives.
+ls -1t "$DEST"/world-*.tgz 2>/dev/null | tail -n +$((KEEP + 1)) | xargs -r rm -f
