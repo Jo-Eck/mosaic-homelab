@@ -1,12 +1,17 @@
 ---
-# Deploy the MeatballCraft LXC (created by infrastructure/proxmox/minecraft.tf).
+# Configure the MeatballCraft LXC (created by infrastructure/apps). Connects as
+# root; bootstraps python3 first since a fresh container may not ship it. The
+# server-pack source is set in group_vars/apps.yml.
 #
 #   ansible-playbook playbooks/minecraft.yml
-#
-# Set the server-pack URL first (CurseForge is auth-gated) in
-# hosts/group_vars/apps.yml or with: -e mc_server_pack_url=<direct-forgecdn-url>
 - name: Deploy MeatballCraft server
   hosts: apps
-  become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Bootstrap python3 (before facts)
+      ansible.builtin.raw: test -x /usr/bin/python3 || (apt-get update && apt-get install -y python3)
+      changed_when: false
+    - name: Gather facts
+      ansible.builtin.setup:
   roles:
     - role: minecraft

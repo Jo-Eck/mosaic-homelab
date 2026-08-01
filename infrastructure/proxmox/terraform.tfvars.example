@@ -27,15 +27,3 @@ vm_datastore    = "local-lvm"
 #   "talos-w-2"  = { role = "worker",       pve_node = "legion", vmid = 8002, cores = 4, memory = 12288, disk_size = 80, ip = "192.168.8.42", mac = "BC:24:11:00:00:42" }
 #   "talos-w-3"  = { role = "worker",       pve_node = "legion", vmid = 8003, cores = 4, memory = 12288, disk_size = 80, ip = "192.168.8.43", mac = "BC:24:11:00:00:43" }
 # }
-
-# --- Minecraft LXC (MeatballCraft) ---------------------------------------
-# All have working defaults in variables.tf; override only to change placement/
-# sizing. Root SSH keys for the container are pulled automatically from
-# https://github.com/<ssh_key_github_user>.keys (default: Jo-Eck).
-# minecraft_pve_node     = "legion"
-# minecraft_vmid         = 8100
-# minecraft_ip           = "192.168.8.44"
-# minecraft_cores        = 4
-# minecraft_memory       = 12288  # MiB (8G heap + headroom)
-# minecraft_disk_size    = 32     # GiB
-# debian_ct_template_url = "http://download.proxmox.com/images/system/debian-12-standard_12.7-1_amd64.tar.zst"

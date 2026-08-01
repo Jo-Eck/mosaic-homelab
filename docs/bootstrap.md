@@ -30,6 +30,7 @@ and LXC share the subnet with the hosts. The router's DHCP pool starts at
 | Raspberry Pi (`raspi`) | DHCP; reached over Tailscale |
 | talos-cp-1 | .40 |
 | talos-w-1 / w-2 / w-3 | .41 / .42 / .43 |
+| meatballcraft (app LXC) | .44 |
 | Reserved for Service LoadBalancers (MetalLB, later) | .60–.99 |
 | Router DHCP pool | .100+ |
 
@@ -93,10 +94,18 @@ sudo -u actions /opt/actions-runner/config.sh \
 sudo install -d -m 0700 -o actions /home/actions/.config/sops/age
 sudo cp infra.agekey /home/actions/.config/sops/age/keys.txt   # infra private key
 
+# Deploy key so CI can SSH into app LXCs (apps.yml). The private key stays here
+# (referenced by MOSAIC_RUNNER_SSH_KEY); the public key is exposed to Tofu via
+# TF_VAR_runner_ssh_public_key so infrastructure/apps seeds it into the container.
+sudo -u actions ssh-keygen -t ed25519 -N '' -C mosaic-runner \
+  -f /home/actions/.ssh/mosaic_apps
+
 sudo tee /etc/actions-runner.env >/dev/null <<'EOF'
 AWS_ACCESS_KEY_ID=<B2 keyID>
 AWS_SECRET_ACCESS_KEY=<B2 applicationKey>
 SOPS_AGE_KEY_FILE=/home/actions/.config/sops/age/keys.txt
+MOSAIC_RUNNER_SSH_KEY=/home/actions/.ssh/mosaic_apps
+TF_VAR_runner_ssh_public_key=<paste /home/actions/.ssh/mosaic_apps.pub>
 EOF
 
 # Point the runner service at it, then install + start
@@ -185,8 +194,9 @@ After this, tearing the cluster down and re-running `apply.yml` (proxmox → tal
 - In GitHub: create a **`production` Environment** with yourself as a required
   reviewer (gates `apply.yml` until you trust it).
 - From now on: open a PR → `plan.yml` posts the diff → merge → `apply.yml`
-  applies infra (proxmox → talos → flux); Flux reconciles the cluster.
-  `drift.yml` runs nightly.
+  applies the platform (proxmox → talos → flux) and Flux reconciles the cluster.
+  Changes under `infrastructure/apps` or an app role trigger `apps.yml`
+  (tofu apply → Ansible configure). `drift.yml` runs nightly.
 - (Optional) enable Renovate to PR version bumps.
 
 ---
@@ -209,6 +219,8 @@ After this, tearing the cluster down and re-running `apply.yml` (proxmox → tal
 | Flux repo-admin PAT | `FLUX_GITHUB_TOKEN` GitHub Actions secret |
 | Cluster age **private** key (encrypted) | `infrastructure/flux/cluster-age.sops.yaml` |
 | GitHub user for SSH keys | `hosts/group_vars/all.yml` (`github_ssh_key_user`) |
+| Runner deploy **public** key | Pi runner `EnvironmentFile` (`TF_VAR_runner_ssh_public_key`) |
+| Runner deploy **private** key path | Pi runner `EnvironmentFile` (`MOSAIC_RUNNER_SSH_KEY`) |
 | Runner version | `hosts/roles/runner/defaults/main.yml` |
 
 ## Backup / DR (the short list)

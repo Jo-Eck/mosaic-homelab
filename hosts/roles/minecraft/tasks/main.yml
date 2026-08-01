@@ -1,18 +1,13 @@
 ---
-# Deploys MeatballCraft (MC 1.12.2 / Cleanroom / Java 25) natively under systemd.
-# Verified mechanics (from jchung01/Cleanroom-ServerStart-Scripts): the Cleanroom
-# installer URL, `java -jar installer --installServer <dir>`, and the resulting
-# run jar `cleanroom-<ver>.jar`. Unknowns flagged inline: server-pack zip layout
-# and the Cleanroom companion mods (Fugue/Scalar).
+# Installs + configures MeatballCraft. The playbook connects as root, so there is
+# no privilege escalation: install runs as root, then we chown to the service
+# user. Loader mechanics (installer URL, --installServer, the cleanroom-<ver>.jar
+# run jar) come from jchung01/Cleanroom-ServerStart-Scripts.
 
-- name: Fail fast without a server-pack source
+- name: Require a server-pack source
   ansible.builtin.assert:
     that: (mc_server_pack_local_src | length > 0) or (mc_server_pack_url | length > 0)
-    fail_msg: >-
-      No server pack set. Provide mc_server_pack_local_src (a zip on the Ansible
-      controller — e.g. exported from your Prism instance or grabbed from the
-      MeatballCraft Discord) or mc_server_pack_url (a direct URL). CurseForge only
-      hosts the stale 0.18.1 server pack.
+    fail_msg: Set mc_server_pack_local_src or mc_server_pack_url in group_vars/apps.yml.
 
 - name: Resolve loader jar + installer URL
   ansible.builtin.set_fact:
@@ -31,7 +26,7 @@
     state: present
     update_cache: true
 
-- name: Ensure apt keyring dir exists
+- name: Ensure apt keyring dir
   ansible.builtin.file:
     path: /etc/apt/keyrings
     state: directory
@@ -89,9 +84,7 @@
     group: "{{ mc_group }}"
     mode: "0750"
 
-# --- Server pack (mods + config) -----------------------------------------
-# One zip, from either a local file (Prism export / Discord download) or a URL.
-# Local wins if both are set.
+# --- Server pack: one zip, from a local file (Prism/Discord) or a URL -----
 - name: Stage server pack from a local file
   ansible.builtin.copy:
     src: "{{ mc_server_pack_local_src }}"
@@ -101,7 +94,7 @@
     mode: "0644"
   when: mc_server_pack_local_src | length > 0
 
-- name: Download the server pack from a URL
+- name: Download server pack from a URL
   ansible.builtin.get_url:
     url: "{{ mc_server_pack_url }}"
     dest: "{{ mc_dir }}/server-pack.zip"
@@ -111,9 +104,7 @@
     mode: "0644"
   when: mc_server_pack_local_src | length == 0
 
-# NOTE: assumes the zip lays mods/, config/, etc. at the archive root. If the pack
-# nests everything under a top-level folder, extract + move (or set the right
-# `extra_opts: [-j]` / a subdir) once we see the real structure on first run.
+# Assumes mods/ sits at the zip root; adjust if the pack nests under a subfolder.
 - name: Extract the server pack
   ansible.builtin.unarchive:
     src: "{{ mc_dir }}/server-pack.zip"
@@ -124,13 +115,11 @@
     creates: "{{ mc_dir }}/mods"
   notify: Restart meatballcraft
 
-# --- Loader install (Cleanroom/Forge --installServer) --------------------
+# --- Loader install (Cleanroom/Forge --installServer, as root) -----------
 - name: Download the {{ mc_loader }} installer
   ansible.builtin.get_url:
     url: "{{ mc_loader_installer_url }}"
     dest: "{{ mc_dir }}/loader-installer.jar"
-    owner: "{{ mc_user }}"
-    group: "{{ mc_group }}"
     mode: "0644"
 
 - name: Run --installServer (produces {{ mc_loader_jar }} + libraries/)
@@ -138,11 +127,18 @@
     cmd: "{{ mc_java_bin }} -jar {{ mc_dir }}/loader-installer.jar --installServer {{ mc_dir }}"
     chdir: "{{ mc_dir }}"
     creates: "{{ mc_dir }}/{{ mc_loader_jar }}"
-  become: true
-  become_user: "{{ mc_user }}"
+  register: _installer
   notify: Restart meatballcraft
 
-# --- RCON password (localhost-only; generated on the box) ----------------
+- name: Give the server dir to {{ mc_user }}
+  ansible.builtin.file:
+    path: "{{ mc_dir }}"
+    owner: "{{ mc_user }}"
+    group: "{{ mc_group }}"
+    recurse: true
+  when: _installer is changed
+
+# --- RCON (localhost only; password generated on the box) ----------------
 - name: Generate RCON password once
   ansible.builtin.shell: "umask 077 && openssl rand -hex 24 > /etc/meatballcraft/rcon.pass"
   args:
@@ -153,11 +149,11 @@
     src: /etc/meatballcraft/rcon.pass
   register: _rcon_pass
 
-- name: Register RCON password fact
+- name: Register RCON password
   ansible.builtin.set_fact:
     mc_rcon_password: "{{ _rcon_pass.content | b64decode | trim }}"
 
-- name: Write RCON env (systemd ExecStop + helper scripts)
+- name: Write RCON env (systemd ExecStop + helpers)
   ansible.builtin.copy:
     dest: /etc/meatballcraft/rcon.env
     content: "RCON_PASSWORD={{ mc_rcon_password }}\n"
@@ -173,32 +169,25 @@
     extra_opts: ["--strip-components=1", "--wildcards", "*/rcon"]
     creates: /usr/local/bin/rcon
 
-# --- Config files --------------------------------------------------------
-- name: Template eula.txt
+# --- Config + service ----------------------------------------------------
+- name: Template config files
   ansible.builtin.template:
-    src: eula.txt.j2
-    dest: "{{ mc_dir }}/eula.txt"
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
     owner: "{{ mc_user }}"
     group: "{{ mc_group }}"
     mode: "0644"
+  loop:
+    - { src: eula.txt.j2, dest: "{{ mc_dir }}/eula.txt" }
+    - { src: server.properties.j2, dest: "{{ mc_dir }}/server.properties" }
   notify: Restart meatballcraft
 
-- name: Template server.properties
-  ansible.builtin.template:
-    src: server.properties.j2
-    dest: "{{ mc_dir }}/server.properties"
-    owner: "{{ mc_user }}"
-    group: "{{ mc_group }}"
-    mode: "0644"
-  notify: Restart meatballcraft
-
-- name: Install mc-console helper (rcon wrapper)
+- name: Install mc-console helper
   ansible.builtin.template:
     src: mc-console.sh.j2
     dest: /usr/local/bin/mc-console
     mode: "0755"
 
-# --- systemd service -----------------------------------------------------
 - name: Install systemd unit
   ansible.builtin.template:
     src: meatballcraft.service.j2
@@ -215,48 +204,42 @@
     state: started
     daemon_reload: true
 
-# --- Backups -------------------------------------------------------------
-- name: Install world backup script
-  ansible.builtin.template:
-    src: mc-backup.sh.j2
-    dest: /usr/local/bin/mc-backup
-    mode: "0755"
+# --- Daily world backup --------------------------------------------------
+- name: Install backup script + units
   when: mc_backup_enabled
-
-- name: Install backup service
-  ansible.builtin.copy:
-    dest: /etc/systemd/system/meatballcraft-backup.service
-    mode: "0644"
-    content: |
-      [Unit]
-      Description=MeatballCraft world backup
-      [Service]
-      Type=oneshot
-      User={{ mc_user }}
-      Group={{ mc_group }}
-      ExecStart=/usr/local/bin/mc-backup
-  when: mc_backup_enabled
-  notify: Reload systemd
-
-- name: Install backup timer
-  ansible.builtin.copy:
-    dest: /etc/systemd/system/meatballcraft-backup.timer
-    mode: "0644"
-    content: |
-      [Unit]
-      Description=Daily MeatballCraft world backup
-      [Timer]
-      OnCalendar=*-*-* {{ '%02d' | format(mc_backup_hour) }}:00:00
-      Persistent=true
-      [Install]
-      WantedBy=timers.target
-  when: mc_backup_enabled
-  notify: Reload systemd
-
-- name: Enable backup timer
-  ansible.builtin.systemd:
-    name: meatballcraft-backup.timer
-    enabled: true
-    state: started
-    daemon_reload: true
-  when: mc_backup_enabled
+  block:
+    - name: Backup script
+      ansible.builtin.template:
+        src: mc-backup.sh.j2
+        dest: /usr/local/bin/mc-backup
+        mode: "0755"
+    - name: Backup service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/meatballcraft-backup.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=MeatballCraft world backup
+          [Service]
+          Type=oneshot
+          User={{ mc_user }}
+          Group={{ mc_group }}
+          ExecStart=/usr/local/bin/mc-backup
+    - name: Backup timer
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/meatballcraft-backup.timer
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Daily MeatballCraft world backup
+          [Timer]
+          OnCalendar=*-*-* {{ '%02d' | format(mc_backup_hour) }}:00:00
+          Persistent=true
+          [Install]
+          WantedBy=timers.target
+    - name: Enable backup timer
+      ansible.builtin.systemd:
+        name: meatballcraft-backup.timer
+        enabled: true
+        state: started
+        daemon_reload: true

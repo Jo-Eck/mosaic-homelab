@@ -24,15 +24,18 @@ over Tailscale. The automation runs on the Pi, which is always on the tailnet.
 - OpenTofu with `siderolabs/talos` installs and bootstraps Talos: one
   control-plane, three workers, default Flannel networking.
 - Flux runs the in-cluster add-ons and apps.
+- App LXCs (e.g. Minecraft) are created by OpenTofu (`infrastructure/apps`) and
+  configured by Ansible — automatically via CI, since a container can't affect
+  cluster quorum (host Ansible stays manual).
 - Secrets are encrypted with SOPS + age; Tofu state lives in Backblaze B2.
 
 ## Layout
 
 ```
-hosts/           Proxmox host and Pi config
-infrastructure/  proxmox (VMs) and talos (cluster + machine-config patches)
+hosts/           Proxmox host + Pi config (Ansible); app-LXC roles
+infrastructure/  proxmox + talos (platform) and apps (LXC apps)
 gitops/          Flux entrypoints, infrastructure, apps
-.github/         plan / apply / drift workflows (Pi runner)
+.github/         plan / apply / drift / apps workflows (Pi runner)
 docs/            bootstrap runbook
 ```
 
@@ -42,14 +45,15 @@ I log in as `jon` with an SSH key, and the sudo password comes from a password
 manager. The automation never uses my login: Tofu reaches Proxmox through a
 scoped API token, Flux decrypts with its own age key inside the cluster, and the
 runner holds the state and secret keys. Host changes still go through Ansible by
-hand, since they can affect cluster quorum.
+hand, since they can affect cluster quorum; app-LXC config is applied by the
+runner automatically (a container can't).
 
 ## TODO
 
 - make application of ansible passwordless
 - graphana dashboard
 - fix statelocking in b2
-- minecraft lxc — MeatballCraft (Cleanroom/Java 25): Tofu LXC + `minecraft` Ansible role done; needs server-pack URL
+- minecraft lxc — MeatballCraft on an app LXC (`infrastructure/apps` + `minecraft` role, CI-configured)
 - arr stack
 
 ## Getting started

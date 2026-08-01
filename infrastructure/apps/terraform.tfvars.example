@@ -1,0 +1,7 @@
+# All vars have working defaults. In CI the Pi runner's deploy public key reaches
+# Tofu via TF_VAR_runner_ssh_public_key in its EnvironmentFile (see
+# docs/bootstrap.md); for a local apply you can instead set it here:
+# runner_ssh_public_key = "ssh-ed25519 AAAA... mosaic-runner"
+
+# This module reuses infrastructure/proxmox/secrets.sops.yaml for the API token,
+# so there is no separate secret to create here.
