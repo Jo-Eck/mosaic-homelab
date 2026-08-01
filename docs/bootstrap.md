@@ -218,7 +218,7 @@ After this, tearing the cluster down and re-running `apply.yml` (proxmox → tal
 | B2 keys + age key path | Pi runner `EnvironmentFile` |
 | Flux repo-admin PAT | `FLUX_GITHUB_TOKEN` GitHub Actions secret |
 | Cluster age **private** key (encrypted) | `infrastructure/flux/cluster-age.sops.yaml` |
-| GitHub user for SSH keys | `hosts/group_vars/all.yml` (`github_ssh_key_user`) |
+| GitHub user for SSH keys | `hosts/inventory/group_vars/all.yml` (`github_ssh_key_user`) |
 | Runner deploy **public** key | Pi runner `EnvironmentFile` (`TF_VAR_runner_ssh_public_key`) |
 | Runner deploy **private** key path | Pi runner `EnvironmentFile` (`MOSAIC_RUNNER_SSH_KEY`) |
 | Runner version | `hosts/roles/runner/defaults/main.yml` |

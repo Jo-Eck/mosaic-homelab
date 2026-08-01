@@ -1,7 +1,7 @@
 ---
 # Configure the MeatballCraft LXC (created by infrastructure/apps). Connects as
 # root; bootstraps python3 first since a fresh container may not ship it. The
-# server-pack source is set in group_vars/apps.yml.
+# server-pack source is set in inventory/group_vars/apps.yml.
 #
 #   ansible-playbook playbooks/minecraft.yml
 - name: Deploy MeatballCraft server
