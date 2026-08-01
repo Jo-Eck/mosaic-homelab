@@ -1,21 +1,23 @@
 # Variables for the `apps` group (currently the MeatballCraft LXC).
 #
-# Deploying the CurseForge 0.18.1 SERVER pack on Cleanroom + Java 25, per the
-# pack's [0.18] performance wiki (Cleanroom 0.3.0-alpha for the 0.18 line;
-# 0.18.6 uses 0.5.17-alpha). Cleanroom runs the same 1.12.2 Forge mods on a
-# modern JVM for ~2x faster loads / less GC lag.
+# Deploying the CurseForge 0.18.1 SERVER pack on Cleanroom + Java 25 — Cleanroom
+# runs the same 1.12.2 Forge mods on a modern JVM for ~2x faster loads / less GC
+# lag. NOTE: Cleanroom's installer only gained working server installs in
+# 0.5.17-alpha, so that's the floor here — the old [0.18] wiki's "0.3.0-alpha"
+# never existed on repo.cleanroommc.com and can't --installServer anyway.
 mc_server_pack_url: "https://mediafilez.forgecdn.net/files/6668/808/Meatballcraft-Server-prerelease-0.18.1.zip"
 mc_server_pack_local_src: ""
 mc_server_pack_sha256: ""
 
 mc_loader: cleanroom
 mc_java_version: 25
-mc_cleanroom_version: "0.3.0-alpha" # [0.18] wiki; matches the 0.18.1 pack era
+mc_cleanroom_version: "0.5.17-alpha" # floor: first release whose installer can --installServer
 mc_gc: zgc
 
 # First-boot risks for this (older pack + Cleanroom) combo, with fixes:
-#   1. If Cleanroom 0.3.0-alpha rejects Java 25 -> bump mc_cleanroom_version to a
-#      newer 0.5.x-alpha, or drop the two vars above to fall back to Forge/Java 8.
+#   1. If Cleanroom 0.5.17-alpha rejects Java 25 or has loader bugs -> bump
+#      mc_cleanroom_version toward the latest 0.6.x-alpha (see the repo's release
+#      list), or drop mc_loader/mc_java_version above to fall back to Forge/Java 8.
 #   2. If it errors on missing/duplicate mods -> add/adjust the Cleanroom
 #      companions (Fugue/Scalar) in the server's mods/ folder.
 #

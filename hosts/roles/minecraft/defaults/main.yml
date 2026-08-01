@@ -14,8 +14,8 @@ mc_backups_dir: /opt/meatballcraft-backups
 mc_mc_version: "1.12.2"
 mc_loader: forge # forge (Java 8) | cleanroom (Java 21+)
 mc_forge_version: "14.23.5.2860"
-# Cleanroom must match the pack era: 0.3.0-alpha (0.18 line), 0.5.17-alpha (0.18.6).
-mc_cleanroom_version: "0.3.0-alpha"
+# Cleanroom's installer only supports server installs from 0.5.17-alpha up.
+mc_cleanroom_version: "0.5.17-alpha"
 mc_java_version: 8 # Temurin/Adoptium; 8 for Forge, 21+ for Cleanroom
 mc_java_bin: /usr/bin/java
 mc_rcon_cli_version: "0.10.3"
