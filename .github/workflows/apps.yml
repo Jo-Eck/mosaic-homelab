@@ -4,6 +4,7 @@ name: apps
 # hosts, they can't affect cluster quorum. Tofu creates/updates the container,
 # then Ansible configures it. Host-level Ansible (pve-hosts.yml) stays manual.
 on:
+  workflow_dispatch: {} # let you re-run after fixes that don't touch the paths below
   push:
     branches: [main]
     paths:
@@ -42,10 +43,17 @@ jobs:
         working-directory: hosts
     steps:
       - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
       - name: Set up Ansible
+        # The target LXC is Debian 13 (Python 3.13), so we need a modern
+        # ansible-core whose bundled `six` can provide six.moves on 3.13 — the
+        # apt ansible 2.10 on the Pi can't ("No module named
+        # 'ansible.module_utils.six.moves'"). ansible-core 2.18 needs controller
+        # Python >= 3.11 but the Pi ships 3.9, so run under mise's Python
+        # (pinned in .mise.toml), never /usr/bin/ansible.
         run: |
-          command -v ansible-playbook >/dev/null 2>&1 || python3 -m pip install --user --break-system-packages ansible-core
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          pip install --upgrade 'ansible-core~=2.18.0'
+          ansible --version
           ansible-galaxy collection install -r requirements.yml
       - name: Configure the app LXCs
         # MOSAIC_RUNNER_SSH_KEY (deploy key path) comes from the runner's systemd

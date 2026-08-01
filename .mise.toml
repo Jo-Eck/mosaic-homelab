@@ -5,6 +5,7 @@
 # NOTE: version numbers below are illustrative starting points — check the
 # upstream release pages and keep talos + kubernetes mutually compatible.
 [tools]
+python     = "3.12" # Ansible controller for the app LXCs (Debian 13 / Py3.13 targets)
 opentofu   = "1.10.3"
 talosctl   = "1.13.7"
 kubectl    = "1.32.3"
