@@ -104,15 +104,39 @@
     mode: "0644"
   when: mc_server_pack_local_src | length == 0
 
-# Assumes mods/ sits at the zip root; adjust if the pack nests under a subfolder.
-- name: Extract the server pack
-  ansible.builtin.unarchive:
-    src: "{{ mc_dir }}/server-pack.zip"
-    dest: "{{ mc_dir }}"
-    remote_src: true
-    owner: "{{ mc_user }}"
-    group: "{{ mc_group }}"
-    creates: "{{ mc_dir }}/mods"
+# The server pack wraps everything in a single top-level dir (e.g.
+# "Meatballcraft-Server-prepatch-0.18.1/"), so extracting straight into mc_dir
+# strands mods/ + config/ one level deep and the server loads only Cleanroom's
+# ~10 built-ins. unzip has no --strip-components, so extract to a temp dir,
+# descend into the lone wrapper dir if there is one, and copy the contents up.
+# Guarded by a sentinel file — not mods/, which the server creates (empty) on
+# first boot and which would then wrongly skip re-extraction.
+- name: Extract the server pack into the server dir
+  ansible.builtin.shell: |
+    set -euo pipefail
+    tmp="$(mktemp -d)"
+    trap 'rm -rf "$tmp"' EXIT
+    unzip -q -o {{ mc_dir | quote }}/server-pack.zip -d "$tmp"
+    shopt -s nullglob
+    entries=("$tmp"/*)
+    root="$tmp"
+    # Descend into a lone wrapper dir, but only if mods/ isn't already at the top.
+    if [ "${#entries[@]}" -eq 1 ] && [ -d "${entries[0]}" ] && [ ! -d "$tmp/mods" ]; then
+      root="${entries[0]}"
+    fi
+    # Safety net: a server pack MUST yield mods/ — fail loudly rather than leave a
+    # bare server that loads only Cleanroom's built-ins.
+    if [ ! -d "$root/mods" ]; then
+      echo "ERROR: no mods/ found after extracting the server pack (root=$root)" >&2
+      ls -la "$tmp" >&2
+      exit 1
+    fi
+    cp -a "$root"/. {{ mc_dir | quote }}/
+    touch {{ mc_dir | quote }}/.pack-extracted
+    chown -R {{ mc_user | quote }}:{{ mc_group | quote }} {{ mc_dir | quote }}
+  args:
+    executable: /bin/bash
+    creates: "{{ mc_dir }}/.pack-extracted"
   notify: Restart meatballcraft
 
 # --- Loader install (Cleanroom/Forge --installServer, as root) -----------
