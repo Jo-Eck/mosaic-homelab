@@ -47,8 +47,8 @@ id_*
 # ---------------------------------------------------------------------------
 *.retry
 .ansible/
-ansible/collections/
-ansible/roles/**/files/*.tar.gz
+hosts/collections/
+hosts/roles/**/files/*.tar.gz
 
 # ---------------------------------------------------------------------------
 # Editor / OS

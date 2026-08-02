@@ -33,7 +33,7 @@ over Tailscale. The automation runs on the Pi, which is always on the tailnet.
 
 ```
 hosts/           Proxmox host + Pi config (Ansible); app-LXC roles
-infrastructure/  proxmox + talos (platform) and apps (LXC apps)
+infrastructure/  proxmox + talos (platform), flux (GitOps bootstrap), apps (LXC apps)
 gitops/          Flux entrypoints, infrastructure, apps
 .github/         plan / apply / drift / apps workflows (Pi runner)
 docs/            bootstrap runbook
@@ -51,9 +51,8 @@ runner automatically (a container can't).
 ## TODO
 
 - make application of ansible passwordless
-- graphana dashboard
+- grafana dashboard
 - fix statelocking in b2
-- minecraft lxc — MeatballCraft on an app LXC (`infrastructure/apps` + `minecraft` role, CI-configured)
 - arr stack
 
 ## Getting started
