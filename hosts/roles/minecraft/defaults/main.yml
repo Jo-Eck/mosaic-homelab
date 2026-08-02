@@ -17,7 +17,10 @@ mc_forge_version: "14.23.5.2860"
 # Cleanroom's installer only supports server installs from 0.5.17-alpha up.
 mc_cleanroom_version: "0.5.17-alpha"
 mc_java_version: 8 # Temurin/Adoptium; 8 for Forge, 21+ for Cleanroom
-mc_java_bin: /usr/bin/java
+# Pin the exact Temurin (Adoptium's Debian layout) rather than /usr/bin/java, so
+# a second JDK on the box can't win the update-alternatives race. amd64-only,
+# which matches the LXC.
+mc_java_bin: "/usr/lib/jvm/temurin-{{ mc_java_version }}-jdk-amd64/bin/java"
 mc_rcon_cli_version: "0.10.3"
 
 # --- Memory / JVM ---

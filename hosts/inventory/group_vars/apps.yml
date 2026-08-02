@@ -1,26 +1,21 @@
 # Variables for the `apps` group (currently the MeatballCraft LXC).
 #
-# Deploying the CurseForge 0.18.1 SERVER pack on Cleanroom + Java 25 — Cleanroom
-# runs the same 1.12.2 Forge mods on a modern JVM for ~2x faster loads / less GC
-# lag. NOTE: Cleanroom's installer only gained working server installs in
-# 0.5.17-alpha, so that's the floor here — the old [0.18] wiki's "0.3.0-alpha"
-# never existed on repo.cleanroommc.com and can't --installServer anyway.
+# Run the CurseForge 0.18.1 SERVER pack the way it ships. The pack's own
+# settings.cfg says: USE_CLEANROOM=false, MC_VER=1.12.2, FORGE_VER=14.23.5.2860 —
+# i.e. Forge + Java 8. That matches the role defaults, so we only set the pack
+# source here (loader/Java/versions come from roles/minecraft/defaults/main.yml).
+#
+# Why not Cleanroom + Java 25 (the "~2x faster" path)? Cleanroom patches the
+# pack's mods at load time to call com.cleanroommc.hackery.ReflectionHackery.getURL,
+# which only exists in Cleanroom <= 0.5.0 — but that era's installer can't
+# --installServer (fixed only in 0.5.17-alpha, which removed getURL). The pack's
+# own CLEANROOM_VER=0.3.0-alpha isn't even published on repo.cleanroommc.com.
+# It's a dead end until MeatballCraft ships a server-installable Cleanroom build;
+# to retry, set mc_loader/mc_java_version/mc_cleanroom_version back here.
 mc_server_pack_url: "https://mediafilez.forgecdn.net/files/6668/808/Meatballcraft-Server-prerelease-0.18.1.zip"
 mc_server_pack_local_src: ""
 mc_server_pack_sha256: ""
 
-mc_loader: cleanroom
-mc_java_version: 25
-mc_cleanroom_version: "0.5.17-alpha" # floor: first release whose installer can --installServer
-mc_gc: zgc
-
-# First-boot risks for this (older pack + Cleanroom) combo, with fixes:
-#   1. If Cleanroom 0.5.17-alpha rejects Java 25 or has loader bugs -> bump
-#      mc_cleanroom_version toward the latest 0.6.x-alpha (see the repo's release
-#      list), or drop mc_loader/mc_java_version above to fall back to Forge/Java 8.
-#   2. If it errors on missing/duplicate mods -> add/adjust the Cleanroom
-#      companions (Fugue/Scalar) in the server's mods/ folder.
-#
 # Other overrides (see hosts/roles/minecraft/defaults/main.yml):
 # mc_heap: "8G"
 # mc_view_distance: 6
