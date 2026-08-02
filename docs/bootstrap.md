@@ -59,8 +59,13 @@ age-keygen -o cluster.agekey    # for Flux (lives in-cluster)
 
 - In the PVE UI: **Datacenter → Permissions → API Tokens**, create
   `tofu@pve!mosaic` with a role that can manage VMs/storage. Note the secret.
-- Build a Talos image at <https://factory.talos.dev> including the
-  **`siderolabs/qemu-guest-agent`** extension. Note the **schematic ID**.
+- Build a Talos image at <https://factory.talos.dev> with the
+  **`siderolabs/qemu-guest-agent`**, **`siderolabs/iscsi-tools`** and
+  **`siderolabs/util-linux-tools`** extensions (the last two are for Longhorn
+  storage). Note the **schematic ID** — the proxmox module already defaults to
+  exactly this set (`88d1f7a5…`). Changing the extension set later changes the
+  ID and needs a `talosctl upgrade --image
+  factory.talos.dev/installer/<id>:<talos_version>` per node.
 - Note your datastores (defaults assume `local` for images, `local-lvm` for
   disks).
 

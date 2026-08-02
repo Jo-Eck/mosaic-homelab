@@ -4,8 +4,9 @@
 proxmox_endpoint = "https://topton.<tailnet>.ts.net:8006"
 proxmox_insecure = true
 
-# From https://factory.talos.dev (include the qemu-guest-agent extension)
-talos_schematic_id = "REPLACE-WITH-FACTORY-SCHEMATIC-ID"
+# https://factory.talos.dev — extensions: qemu-guest-agent + iscsi-tools +
+# util-linux-tools (the last two are for Longhorn). This ID is that exact set:
+talos_schematic_id = "88d1f7a5c4f1d3aba7df787c448c1d3d008ed29cfb34af53fa0df4336a56040b"
 talos_version      = "v1.13.7"
 
 # LAN details — must match how the PVE hosts are wired

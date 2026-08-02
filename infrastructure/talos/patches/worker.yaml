@@ -1,5 +1,18 @@
-# Worker specific settings. Add node labels, extra disk mounts for storage,
-# etc. here as the cluster grows (e.g. Longhorn/democratic-csi disks).
+# Worker-specific settings.
 machine:
   nodeLabels:
     node.mosaic/role: worker
+
+  # Longhorn stores volume data under /var/lib/longhorn. Talos' kubelet runs in a
+  # container, so bind-mount that path in (rshared) or the CSI plugin can't see
+  # the volumes it creates. Requires the iscsi-tools + util-linux-tools system
+  # extensions on the node (see talos_schematic_id in infrastructure/proxmox).
+  kubelet:
+    extraMounts:
+      - destination: /var/lib/longhorn
+        type: bind
+        source: /var/lib/longhorn
+        options:
+          - bind
+          - rshared
+          - rw

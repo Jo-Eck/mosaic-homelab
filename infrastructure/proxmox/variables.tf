@@ -24,12 +24,17 @@ variable "talos_version" {
 
 variable "talos_schematic_id" {
   description = <<-EOT
-    Talos Image Factory schematic ID. Create one at https://factory.talos.dev
-    with at least the `siderolabs/qemu-guest-agent` system extension so the VMs
-    report their IP to Proxmox.
+    Talos Image Factory schematic ID (https://factory.talos.dev). Extensions:
+      - siderolabs/qemu-guest-agent  (VMs report their IP to Proxmox)
+      - siderolabs/iscsi-tools       (Longhorn: iscsid)
+      - siderolabs/util-linux-tools  (Longhorn: fstrim/trim support)
+    The default below is that exact set. Changing extensions changes the ID and
+    means existing nodes need `talosctl upgrade --image
+    factory.talos.dev/installer/<id>:<talos_version>` (a fresh install picks the
+    extensions up automatically).
   EOT
   type        = string
-  default     = "ce4c980550dd2ab1b17bbf2b08801c7eb59418eafe8f279833297925d67c7515"
+  default     = "88d1f7a5c4f1d3aba7df787c448c1d3d008ed29cfb34af53fa0df4336a56040b"
 }
 
 # --- Networking -----------------------------------------------------------
