@@ -1,7 +1,7 @@
 # MeatballCraft (MC 1.12.2) under systemd in the infrastructure/apps LXC.
 # Defaults = classic Forge + Java 8 (simplest; ships with the server pack).
 # Switch to Cleanroom + modern Java (mc_loader/mc_java_version) for ~2x faster
-# loads — same mods, same MC version, so it keeps the world. The live 0.18.1
+# loads — same mods, same MC version, so it keeps the world. The live 0.18.6.4
 # deployment sets those overrides in group_vars/apps.yml.
 
 # --- Identity / paths ---
@@ -58,7 +58,13 @@ mc_java_args_g1: >-
 # --- Server pack (set the source in group_vars/apps.yml) ---
 mc_server_pack_local_src: "" # a zip on the Ansible controller (Prism/Discord), or...
 mc_server_pack_url: ""       # ...a direct URL
-mc_server_pack_sha256: ""
+# Optional integrity check, passed straight to get_url as "<algo>:<hash>".
+# CurseForge publishes an MD5 per file, so "md5:<hash>" is the natural choice
+# (also accepts sha256:, sha1:, ...). Empty = no verification.
+mc_server_pack_checksum: ""
+# One-shot: wipe {{ mc_dir }}/world before extracting, for a clean save on a
+# version bump. Off by default; pass `-e mc_wipe_world=true` when you want it.
+mc_wipe_world: false
 
 # --- server.properties ---
 mc_motd: "MOSAIC \u2014 MeatballCraft"

@@ -1,9 +1,11 @@
 # Variables for the `apps` group (currently the MeatballCraft LXC).
 #
-# Run the CurseForge 0.18.1 SERVER pack the way it ships. The pack's own
+# Run the CurseForge 0.18.6.4 SERVER pack the way it ships. The pack's own
 # settings.cfg says: USE_CLEANROOM=false, MC_VER=1.12.2, FORGE_VER=14.23.5.2860 —
 # i.e. Forge + Java 8. That matches the role defaults, so we only set the pack
 # source here (loader/Java/versions come from roles/minecraft/defaults/main.yml).
+# (Forge is installed independently of the pack, so if a future pack bumps
+# FORGE_VER, mods fail to load at boot — bump mc_forge_version in defaults then.)
 #
 # Why not Cleanroom + Java 25 (the "~2x faster" path)? Cleanroom patches the
 # pack's mods at load time to call com.cleanroommc.hackery.ReflectionHackery.getURL,
@@ -12,9 +14,14 @@
 # own CLEANROOM_VER=0.3.0-alpha isn't even published on repo.cleanroommc.com.
 # It's a dead end until MeatballCraft ships a server-installable Cleanroom build;
 # to retry, set mc_loader/mc_java_version/mc_cleanroom_version back here.
-mc_server_pack_url: "https://mediafilez.forgecdn.net/files/6668/808/Meatballcraft-Server-prerelease-0.18.1.zip"
+#
+# Upgrading: change the URL below to the new server pack (Additional Files on the
+# CurseForge file page → "…/download/<id>", which redirects to mediafilez), set
+# the checksum to that file's published MD5, and re-run. The role re-downloads
+# and re-extracts on the filename change and clears mods removed upstream.
+mc_server_pack_url: "https://mediafilez.forgecdn.net/files/8665/734/Meatballcraft-Server-prerelease-0.18.6.4.zip"
 mc_server_pack_local_src: ""
-mc_server_pack_sha256: ""
+mc_server_pack_checksum: "md5:85a4a946e4c9c5dd35e7ef3d73a5d8c6"
 
 # Other overrides (see hosts/roles/minecraft/defaults/main.yml):
 # mc_heap: "8G"

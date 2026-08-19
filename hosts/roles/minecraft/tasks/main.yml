@@ -9,6 +9,25 @@
     that: (mc_server_pack_local_src | length > 0) or (mc_server_pack_url | length > 0)
     fail_msg: Set mc_server_pack_local_src or mc_server_pack_url in group_vars/apps.yml.
 
+# The pack's filename is the single source of truth for "which version is
+# installed". We stamp it into .pack-extracted after a successful extract, then
+# re-read it each run: when it differs (a URL bump in apps.yml), the pack is
+# re-downloaded and re-extracted; when it matches, both are skipped. This is what
+# makes a version upgrade a one-line change and keeps normal runs no-ops.
+- name: Resolve the server-pack identity
+  ansible.builtin.set_fact:
+    mc_server_pack_id: "{{ (mc_server_pack_url if (mc_server_pack_url | length > 0) else mc_server_pack_local_src) | basename }}"
+
+- name: Read the installed-pack marker
+  ansible.builtin.slurp:
+    src: "{{ mc_dir }}/.pack-extracted"
+  register: _pack_marker
+  failed_when: false
+
+- name: Decide whether the pack must be (re)installed
+  ansible.builtin.set_fact:
+    mc_pack_changed: "{{ (_pack_marker.content | default('') | b64decode | trim) != mc_server_pack_id }}"
+
 - name: Resolve loader jar + installer URL
   ansible.builtin.set_fact:
     mc_loader_jar: >-
@@ -92,30 +111,52 @@
     owner: "{{ mc_user }}"
     group: "{{ mc_group }}"
     mode: "0644"
-  when: mc_server_pack_local_src | length > 0
+  when:
+    - mc_server_pack_local_src | length > 0
+    - mc_pack_changed | bool
 
+# force: true because the on-disk name is always server-pack.zip, so without it a
+# URL bump (new contents, same dest) could 304 and strand the old pack. It only
+# fires when mc_pack_changed, i.e. on first install or an actual version bump.
 - name: Download server pack from a URL
   ansible.builtin.get_url:
     url: "{{ mc_server_pack_url }}"
     dest: "{{ mc_dir }}/server-pack.zip"
-    checksum: "{{ ('sha256:' ~ mc_server_pack_sha256) if mc_server_pack_sha256 | length > 0 else omit }}"
+    checksum: "{{ mc_server_pack_checksum if (mc_server_pack_checksum | length > 0) else omit }}"
+    force: true
     owner: "{{ mc_user }}"
     group: "{{ mc_group }}"
     mode: "0644"
-  when: mc_server_pack_local_src | length == 0
+  when:
+    - mc_server_pack_local_src | length == 0
+    - mc_pack_changed | bool
 
 # The server pack wraps everything in a single top-level dir (e.g.
-# "Meatballcraft-Server-prepatch-0.18.1/"), so extracting straight into mc_dir
-# strands mods/ + config/ one level deep and the server loads only Cleanroom's
-# ~10 built-ins. The extractor (files/extract-pack.sh) strips that wrapper. It's
-# a transferred script, not an inline `shell:` — the pack's array/${#..} bash
-# collides with Ansible's arg splitter and Jinja templating. Guarded by a
-# sentinel file (not mods/, which the server creates empty on first boot and
-# which would then wrongly skip re-extraction).
+# "Meatballcraft-Server-prerelease-0.18.6.4/"), so extracting straight into
+# mc_dir strands mods/ + config/ one level deep and the server loads only the
+# loader's ~10 built-ins. The extractor (files/extract-pack.sh) strips that
+# wrapper. It's a transferred script, not an inline `shell:` — the pack's
+# array/${#..} bash collides with Ansible's arg splitter and Jinja templating.
+#
+# Re-extraction is driven by mc_pack_changed (the .pack-extracted marker vs the
+# desired pack filename), not a bare sentinel: a plain `creates:` would skip the
+# new pack on every upgrade. The script also replaces only the pack's own
+# top-level dirs, so mods removed between versions don't linger and crash boot.
+
+# Optional clean-slate world reset. Off by default; pass it for a one-shot wipe
+# on a version bump you don't want to carry the old save into:
+#   ansible-playbook playbooks/minecraft.yml -e mc_wipe_world=true
+- name: Wipe the world for a clean pack install (opt-in)
+  ansible.builtin.file:
+    path: "{{ mc_dir }}/world"
+    state: absent
+  when: mc_wipe_world | bool
+  notify: Restart meatballcraft
+
 - name: Extract the server pack into the server dir
   ansible.builtin.script:
-    cmd: extract-pack.sh {{ mc_dir | quote }} {{ mc_user | quote }} {{ mc_group | quote }}
-    creates: "{{ mc_dir }}/.pack-extracted"
+    cmd: extract-pack.sh {{ mc_dir | quote }} {{ mc_user | quote }} {{ mc_group | quote }} {{ mc_server_pack_id | quote }}
+  when: mc_pack_changed | bool
   notify: Restart meatballcraft
 
 # --- Loader install (Cleanroom/Forge --installServer, as root) -----------
