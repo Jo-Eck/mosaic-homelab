@@ -11,7 +11,7 @@ on:
       - "infrastructure/apps/**"
       - "hosts/roles/minecraft/**"
       - "hosts/playbooks/minecraft.yml"
-      - "hosts/group_vars/apps.yml"
+      - "hosts/inventory/group_vars/apps.yml"
 
 # Shared with apply.yml so no two applies hit Proxmox/state at once.
 concurrency:
@@ -63,7 +63,14 @@ jobs:
           ansible --version
           # Fail loudly if PATH still resolves to the old apt ansible (no "[core").
           ansible --version | grep -q '\[core ' || { echo "::error::apt ansible on PATH, not mise's ansible-core"; exit 1; }
-          ansible-galaxy collection install -r requirements.yml
+          # --clear-response-cache/--no-cache: this runner is persistent, and
+          # ansible-galaxy's response cache (~/.ansible/galaxy_cache/api.json) can
+          # pin a stale Galaxy API version — e.g. seeded by the old apt ansible
+          # 2.10 above — so later runs negotiate the *removed* v2 API and die with
+          # "getting available versions of collection community.general: 'results'"
+          # ('results' is v2's pagination key). A clean client negotiates v3 fine;
+          # clear the cache and don't reuse it so every run re-negotiates fresh.
+          ansible-galaxy collection install -r requirements.yml --clear-response-cache --no-cache
       - name: Configure the app LXCs
         # MOSAIC_RUNNER_SSH_KEY (deploy key path) comes from the runner's systemd
         # EnvironmentFile; its public key is seeded into the container by
