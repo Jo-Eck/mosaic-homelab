@@ -4,4 +4,5 @@ kind: Kustomization
 # kube-prometheus-stack). Reconciled by the "infrastructure" Flux Kustomization
 # with wait: true, so apps only start once these are Ready.
 resources:
-  - local-path-provisioner # default StorageClass (rancher.io/local-path)
+  - longhorn # replicated block storage; the cluster-default StorageClass
+  - local-path-provisioner # non-default node-local class (fast scratch)

@@ -9,8 +9,8 @@
 #      hostPath, which requires the privileged profile.
 #   2. config.json data dir is /var/mnt/local-path-provisioner. On Talos "/" and
 #      "/opt" are read-only; "/var" is the writable, persistent partition.
-#   3. The StorageClass is annotated as the cluster default so plain PVCs (no
-#      storageClassName) bind here.
+#   3. NOT the cluster default (Longhorn is) — this is an opt-in node-local class
+#      for scratch/ephemeral volumes; request it with storageClassName: local-path.
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -134,7 +134,9 @@ kind: StorageClass
 metadata:
   name: local-path
   annotations:
-    storageclass.kubernetes.io/is-default-class: "true"
+    # Longhorn is the cluster default now; keep local-path as an opt-in class
+    # (fast, node-local, non-replicated) for scratch/ephemeral volumes.
+    storageclass.kubernetes.io/is-default-class: "false"
 provisioner: rancher.io/local-path
 volumeBindingMode: WaitForFirstConsumer
 reclaimPolicy: Delete

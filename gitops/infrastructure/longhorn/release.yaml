@@ -1,0 +1,35 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: longhorn
+  namespace: longhorn-system
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: longhorn
+      version: "1.12.0"
+      sourceRef:
+        kind: HelmRepository
+        name: longhorn
+  install:
+    createNamespace: false # namespace.yaml owns the PSA labels
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    defaultSettings:
+      # Matches the kubelet extraMount added in infrastructure/talos worker patch.
+      defaultDataPath: /var/lib/longhorn
+      # 3 workers: 2 replicas survives a node loss without tripling disk use.
+      defaultReplicaCount: 2
+    persistence:
+      # Longhorn becomes the cluster default StorageClass (local-path is demoted
+      # to non-default in this same PR).
+      defaultClass: true
+      defaultClassReplicaCount: 2
+    # No UI ingress yet — reach the dashboard via `kubectl -n longhorn-system
+    # port-forward svc/longhorn-frontend 8080:80` until it's fronted by the
+    # Tailscale operator.
+    ingress:
+      enabled: false
