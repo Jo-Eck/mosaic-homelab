@@ -6,3 +6,4 @@ kind: Kustomization
 resources:
   - longhorn # replicated block storage; the cluster-default StorageClass
   - local-path-provisioner # non-default node-local class (fast scratch)
+  - tailscale-operator # exposes Services/Ingresses onto the tailnet

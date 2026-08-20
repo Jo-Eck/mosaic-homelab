@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    # node-exporter mounts host paths -> needs privileged under Talos PSA.
+    pod-security.kubernetes.io/enforce: privileged

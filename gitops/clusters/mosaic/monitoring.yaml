@@ -1,0 +1,20 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: monitoring
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./gitops/monitoring
+  prune: true
+  # Needs the platform first: Longhorn (PVCs) + the Tailscale operator (Grafana
+  # ingress class) both live under the infrastructure Kustomization.
+  dependsOn:
+    - name: infrastructure
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
