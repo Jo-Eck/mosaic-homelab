@@ -4,6 +4,4 @@ resources:
   - namespace.yaml
   - repository.yaml
   - release.yaml
-  # After creating it from oauth-secret.sops.yaml.example (see that file), add:
-  #   - oauth-secret.sops.yaml
-  # Until then the operator pod waits for the `operator-oauth` Secret.
+  - oauth-secret.sops.yaml
